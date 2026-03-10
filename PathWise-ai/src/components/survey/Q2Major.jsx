@@ -19,7 +19,7 @@ export default function Q2Major() {
             key={field}
             whileTap={{ scale: 0.98 }}
             onClick={() => setMajor(field)}
-            className={`w-full text-left px-5 py-3.5 rounded-lg text-sm font-medium border transition-colors duration-150
+            className={`w-full text-left px-6 py-4 rounded-lg text-sm font-medium border transition-colors duration-150
               ${major === field
                 ? 'bg-[#37352f] text-white border-[#37352f]'
                 : 'bg-white text-[#37352f] border-[#e9e9e7] hover:bg-[#f1f1ef]'

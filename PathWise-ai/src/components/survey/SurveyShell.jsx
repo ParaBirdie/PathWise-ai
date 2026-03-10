@@ -24,7 +24,7 @@ export default function SurveyShell({ stepKey, children }) {
   const TOTAL_QUESTIONS = 6
 
   return (
-    <div className="relative min-h-screen bg-[#f7f7f5] flex flex-col items-center justify-center px-6 py-16 overflow-hidden">
+    <div className="relative min-h-screen bg-[#f7f7f5] flex flex-col items-center justify-start px-6 pt-20 pb-16 overflow-hidden">
       {/* Progress bar */}
       {currentStep >= 1 && currentStep <= TOTAL_QUESTIONS && (
         <div className="fixed top-0 left-0 right-0 h-[2px] bg-[#e9e9e7] z-50">
@@ -52,7 +52,7 @@ export default function SurveyShell({ stepKey, children }) {
           initial="enter"
           animate="center"
           exit="exit"
-          className="w-full max-w-xl"
+          className="w-full max-w-2xl"
         >
           {children}
         </motion.div>

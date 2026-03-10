@@ -4,10 +4,45 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSurveyStore } from '../../store/surveyStore'
 import QuestionCard from './QuestionCard'
 
-const POPULAR_SCHOOLS = [
-  'MIT', 'Stanford', 'Harvard', 'Yale', 'Princeton', 'Columbia',
-  'Cornell', 'UC Berkeley', 'UCLA', 'NYU', 'Georgia Tech', 'Carnegie Mellon',
-  'University of Michigan', 'Northeastern', 'Vanderbilt', 'Tufts',
+const ALL_UNIVERSITIES = [
+  'MIT', 'Harvard', 'Yale', 'Princeton', 'Stanford', 'Columbia',
+  'Caltech', 'Duke University', 'Johns Hopkins University', 'Northwestern University',
+  'Dartmouth College', 'Brown University', 'Vanderbilt University', 'Rice University',
+  'Washington University in St. Louis', 'Emory University', 'University of Notre Dame',
+  'Georgetown University', 'Tufts University', 'Wake Forest University', 'Boston College',
+  'Carnegie Mellon', 'Georgia Tech', 'University of Michigan', 'UC Berkeley', 'UCLA',
+  'NYU', 'Northeastern', 'Cornell',
+  'University of Virginia', 'University of Wisconsin–Madison',
+  'University of Illinois Urbana-Champaign', 'Ohio State University', 'Penn State University',
+  'Purdue University', 'University of Washington', 'Arizona State University',
+  'Michigan State University', 'University of Florida', 'Rutgers University',
+  'Virginia Tech', 'University of Maryland', 'University of Colorado Boulder',
+  'Indiana University Bloomington', 'University of Minnesota', 'Clemson University',
+  'University of Connecticut', 'Florida State University', 'University of Alabama',
+  'Auburn University', 'Iowa State University', 'University of Iowa',
+  'University of Kansas', 'Kansas State University', 'University of Missouri',
+  'University of Tennessee', 'University of Kentucky', 'University of Arkansas',
+  'University of Oklahoma', 'Louisiana State University', 'University of Mississippi',
+  'Mississippi State University', 'Oklahoma State University', 'University of South Carolina',
+  'University of Oregon', 'University of Arizona', 'University of Nebraska–Lincoln',
+  'University of Nevada Las Vegas', 'University of New Mexico', 'University of Wyoming',
+  'University of Utah', 'Utah State University', 'West Virginia University',
+  'Miami University Ohio', 'Colorado State University', 'San Diego State University',
+  'San Jose State University', 'Cal Poly San Luis Obispo',
+  'SUNY Binghamton', 'SUNY Buffalo', 'SUNY Stony Brook',
+  'UMass Amherst', 'UNC Chapel Hill', 'UT Austin',
+  'UC Davis', 'UC Irvine', 'UC San Diego', 'UC Santa Barbara', 'UC Santa Cruz',
+  'Boston University', 'American University', 'DePaul University', 'Drexel University',
+  'Fordham University', 'George Washington University', 'Gonzaga University',
+  'Lehigh University', 'Loyola University Chicago', 'Marquette University',
+  'Rensselaer Polytechnic Institute', 'Seton Hall University',
+  'Stevens Institute of Technology', 'Syracuse University', 'Tulane University',
+  'Villanova University', 'University of Denver', 'University of Miami',
+  'Case Western Reserve University', 'Worcester Polytechnic Institute',
+  'Marist College', 'Babson College', 'Bentley University', 'Bryant University',
+  'College of the Holy Cross', 'CUNY Baruch College', 'Fairfield University',
+  'Hofstra University', 'Pace University', 'Providence College',
+  'Quinnipiac University', 'Roger Williams University', 'Sacred Heart University',
 ]
 
 export default function Q1Schools() {
@@ -27,9 +62,11 @@ export default function Q1Schools() {
     if (e.key === 'Enter') addSchool(input)
   }
 
-  const suggestions = POPULAR_SCHOOLS.filter(
-    (s) => !schools.includes(s) && s.toLowerCase().includes(input.toLowerCase()) && input.length > 0
-  ).slice(0, 4)
+  const suggestions = input.length > 0
+    ? ALL_UNIVERSITIES.filter(
+        (s) => !schools.includes(s) && s.toLowerCase().includes(input.toLowerCase())
+      ).slice(0, 6)
+    : []
 
   return (
     <QuestionCard
@@ -39,7 +76,7 @@ export default function Q1Schools() {
       canProgress={schools.length >= 1}
     >
       {/* Tag list */}
-      <div className="flex flex-wrap gap-3 min-h-[3rem] mb-5">
+      <div className="flex flex-wrap gap-3 min-h-[2.5rem] mb-5">
         <AnimatePresence>
           {schools.map((school) => (
             <motion.span
@@ -93,7 +130,7 @@ export default function Q1Schools() {
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -4 }}
-                className="absolute top-full mt-2 left-0 right-0 bg-white border border-[#e9e9e7] rounded-lg shadow-md z-10 overflow-hidden"
+                className="absolute top-full mt-1 left-0 right-0 bg-white border border-[#e9e9e7] rounded-lg shadow-md z-10 overflow-hidden"
               >
                 {suggestions.map((s) => (
                   <button
@@ -107,24 +144,6 @@ export default function Q1Schools() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-      )}
-
-      {/* Popular shortcuts */}
-      {schools.length === 0 && input.length === 0 && (
-        <div className="mt-6">
-          <p className="text-xs text-[#787774] mb-3">Popular picks</p>
-          <div className="flex flex-wrap gap-2">
-            {POPULAR_SCHOOLS.slice(0, 8).map((s) => (
-              <button
-                key={s}
-                onClick={() => addSchool(s)}
-                className="px-3 py-1.5 rounded-md border border-[#e9e9e7] text-sm text-[#37352f] bg-white hover:bg-[#f1f1ef] transition-colors duration-150"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
         </div>
       )}
     </QuestionCard>

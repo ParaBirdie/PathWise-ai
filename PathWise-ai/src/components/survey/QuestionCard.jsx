@@ -22,18 +22,17 @@ export default function QuestionCard({ question, subtitle, children, onNext, can
       )}
       {currentStep === 1 && <div className="mb-6 h-6" />}
 
-      {/* Card */}
-      <div className="notion-card p-10 sm:p-12">
+      <div className="py-4">
         <h2
-          className="text-3xl sm:text-4xl font-bold text-[#37352f] leading-tight mb-3"
-          style={{ letterSpacing: '-0.02em' }}
+          className="text-4xl sm:text-5xl font-bold text-[#37352f] leading-tight mb-4"
+          style={{ letterSpacing: '-0.025em' }}
         >
           {question}
         </h2>
         {subtitle && (
-          <p className="text-sm text-[#787774] leading-relaxed mb-8">{subtitle}</p>
+          <p className="text-base text-[#787774] leading-relaxed mb-10">{subtitle}</p>
         )}
-        {!subtitle && <div className="mb-8" />}
+        {!subtitle && <div className="mb-10" />}
 
         {children}
 
@@ -41,10 +40,10 @@ export default function QuestionCard({ question, subtitle, children, onNext, can
           <button
             onClick={onNext}
             disabled={!canProgress}
-            className={`mt-8 w-full py-3.5 rounded-lg text-sm font-medium transition-colors duration-150
+            className={`mt-10 w-full py-4 rounded-xl text-sm font-medium transition-colors duration-150
               ${canProgress
                 ? 'bg-[#37352f] text-white hover:bg-[#2f2c26] cursor-pointer'
-                : 'bg-[#f1f1ef] text-[#c4c4c0] cursor-not-allowed'
+                : 'bg-[#e9e9e7] text-[#c4c4c0] cursor-not-allowed'
               }`}
           >
             {nextLabel}

@@ -13,13 +13,13 @@ export default function Q2Major() {
       onNext={goNext}
       canProgress={!!major}
     >
-      <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {FIELDS_OF_STUDY.map((field) => (
           <motion.button
             key={field}
             whileTap={{ scale: 0.98 }}
             onClick={() => setMajor(field)}
-            className={`w-full text-left px-6 py-4 rounded-lg text-sm font-medium border transition-colors duration-150
+            className={`w-full text-left px-6 py-4 rounded-xl text-sm font-medium border transition-colors duration-150
               ${major === field
                 ? 'bg-[#37352f] text-white border-[#37352f]'
                 : 'bg-white text-[#37352f] border-[#e9e9e7] hover:bg-[#f1f1ef]'

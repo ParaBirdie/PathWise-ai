@@ -4,45 +4,52 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSurveyStore } from '../../store/surveyStore'
 import QuestionCard from './QuestionCard'
 
+// Matches school_name values in supabase/schema.sql university_financials seed
 const ALL_UNIVERSITIES = [
-  'MIT', 'Harvard', 'Yale', 'Princeton', 'Stanford', 'Columbia',
+  // Elite Private
+  'MIT', 'Stanford', 'Harvard', 'Princeton', 'Yale',
   'Caltech', 'Duke University', 'Johns Hopkins University', 'Northwestern University',
   'Dartmouth College', 'Brown University', 'Vanderbilt University', 'Rice University',
   'Washington University in St. Louis', 'Emory University', 'University of Notre Dame',
   'Georgetown University', 'Tufts University', 'Wake Forest University', 'Boston College',
-  'Carnegie Mellon', 'Georgia Tech', 'University of Michigan', 'UC Berkeley', 'UCLA',
-  'NYU', 'Northeastern', 'Cornell',
-  'University of Virginia', 'University of Wisconsin–Madison',
+  // Research Public
+  'UC Berkeley', 'UCLA', 'Carnegie Mellon', 'Georgia Tech', 'University of Michigan',
+  'Northeastern', 'NYU',
+  'University of Virginia', 'UNC Chapel Hill', 'University of Wisconsin–Madison',
   'University of Illinois Urbana-Champaign', 'Ohio State University', 'Penn State University',
   'Purdue University', 'University of Washington', 'Arizona State University',
-  'Michigan State University', 'University of Florida', 'Rutgers University',
-  'Virginia Tech', 'University of Maryland', 'University of Colorado Boulder',
-  'Indiana University Bloomington', 'University of Minnesota', 'Clemson University',
-  'University of Connecticut', 'Florida State University', 'University of Alabama',
-  'Auburn University', 'Iowa State University', 'University of Iowa',
-  'University of Kansas', 'Kansas State University', 'University of Missouri',
-  'University of Tennessee', 'University of Kentucky', 'University of Arkansas',
-  'University of Oklahoma', 'Louisiana State University', 'University of Mississippi',
-  'Mississippi State University', 'Oklahoma State University', 'University of South Carolina',
-  'University of Oregon', 'University of Arizona', 'University of Nebraska–Lincoln',
-  'University of Nevada Las Vegas', 'University of New Mexico', 'University of Wyoming',
-  'University of Utah', 'Utah State University', 'West Virginia University',
-  'Miami University Ohio', 'Colorado State University', 'San Diego State University',
-  'San Jose State University', 'Cal Poly San Luis Obispo',
-  'SUNY Binghamton', 'SUNY Buffalo', 'SUNY Stony Brook',
-  'UMass Amherst', 'UNC Chapel Hill', 'UT Austin',
-  'UC Davis', 'UC Irvine', 'UC San Diego', 'UC Santa Barbara', 'UC Santa Cruz',
-  'Boston University', 'American University', 'DePaul University', 'Drexel University',
-  'Fordham University', 'George Washington University', 'Gonzaga University',
-  'Lehigh University', 'Loyola University Chicago', 'Marquette University',
-  'Rensselaer Polytechnic Institute', 'Seton Hall University',
-  'Stevens Institute of Technology', 'Syracuse University', 'Tulane University',
-  'Villanova University', 'University of Denver', 'University of Miami',
-  'Case Western Reserve University', 'Worcester Polytechnic Institute',
-  'Marist College', 'Babson College', 'Bentley University', 'Bryant University',
-  'College of the Holy Cross', 'CUNY Baruch College', 'Fairfield University',
-  'Hofstra University', 'Pace University', 'Providence College',
-  'Quinnipiac University', 'Roger Williams University', 'Sacred Heart University',
+  'Michigan State University', 'UC San Diego', 'UC Davis', 'UC Santa Barbara',
+  'UC Irvine', 'UC Santa Cruz', 'UT Austin', 'University of Florida', 'UMass Amherst',
+  'Rutgers University', 'Virginia Tech', 'University of Maryland',
+  'University of Colorado Boulder', 'Indiana University Bloomington', 'University of Minnesota',
+  'Clemson University', 'University of Connecticut',
+  // Flagship State
+  'Florida State University', 'University of Alabama', 'Auburn University',
+  'Iowa State University', 'University of Iowa', 'University of Kansas',
+  'Kansas State University', 'University of Missouri', 'University of Tennessee',
+  'University of Kentucky', 'University of Arkansas', 'University of Oklahoma',
+  'Oklahoma State University', 'Louisiana State University', 'University of South Carolina',
+  'University of Vermont', 'University of Oregon', 'University of Arizona',
+  'Miami University Ohio', 'Colorado State University', 'University of Utah',
+  'Utah State University', 'University of Nevada Las Vegas', 'University of New Mexico',
+  'West Virginia University', 'University of Mississippi', 'Mississippi State University',
+  'University of Nebraska–Lincoln', 'University of Wyoming',
+  'SUNY Buffalo', 'SUNY Stony Brook', 'SUNY Binghamton',
+  'Cal Poly San Luis Obispo', 'San Diego State University', 'San Jose State University',
+  // Research Private
+  'Boston University', 'George Washington University', 'American University',
+  'Fordham University', 'Villanova University', 'Case Western Reserve University',
+  'Rensselaer Polytechnic Institute', 'Worcester Polytechnic Institute',
+  'Stevens Institute of Technology', 'Lehigh University', 'Drexel University',
+  'Syracuse University', 'Tulane University', 'University of Miami',
+  'University of Denver', 'Gonzaga University', 'Marquette University',
+  'Seton Hall University', 'DePaul University', 'Loyola University Chicago',
+  // Local / Regional
+  'Babson College', 'Bentley University', 'Providence College',
+  'College of the Holy Cross', 'Fairfield University', 'Quinnipiac University',
+  'Sacred Heart University', 'Marist College', 'Bryant University',
+  'Roger Williams University', 'Hofstra University', 'Pace University',
+  'CUNY Baruch College',
 ]
 
 export default function Q1Schools() {
@@ -65,7 +72,7 @@ export default function Q1Schools() {
   const suggestions = input.length > 0
     ? ALL_UNIVERSITIES.filter(
         (s) => !schools.includes(s) && s.toLowerCase().includes(input.toLowerCase())
-      ).slice(0, 6)
+      ).slice(0, 8)
     : []
 
   return (

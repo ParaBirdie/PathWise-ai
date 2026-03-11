@@ -145,9 +145,33 @@ export function calculateNPV(schoolName, major, householdIncome, isInState) {
 }
 
 /**
- * Compare two school offers. Returns enriched comparison object.
+ * Compute a raw score for a single goal against a result object.
  */
-export function compareOffers(schools, major, householdIncome, isInState, goal = 'roi') {
+function goalRawScore(result, goalValue) {
+  switch (goalValue) {
+    case 'minimize_cost':
+      return -result.netCostTotal
+    case 'maximize_roi':
+      return result.npv
+    case 'industry_fit':
+      // Blend prestige importance (signalWeight) with employment rate
+      return result.signalWeight * result.prestigeScore + (100 - result.signalWeight) * result.employmentRate
+    case 'grad_school':
+      return result.prestigeScore
+    case 'prestige_optionality':
+      return result.prestigeScore
+    case 'program_strength':
+      return result.employmentRate + result.prestigeScore * 0.5
+    default:
+      return result.npv
+  }
+}
+
+/**
+ * Compare school offers. Returns enriched comparison object.
+ * @param {string[]} goals - Array of PRIMARY_GOALS values; falls back to ['maximize_roi']
+ */
+export function compareOffers(schools, major, householdIncome, isInState, goals = ['maximize_roi']) {
   if (!Array.isArray(schools) || schools.length === 0) {
     throw new Error('compareOffers: schools must be a non-empty array')
   }
@@ -155,6 +179,7 @@ export function compareOffers(schools, major, householdIncome, isInState, goal =
     throw new Error('compareOffers: householdIncome must be a non-negative number')
   }
 
+  const activeGoals = Array.isArray(goals) && goals.length > 0 ? goals : ['maximize_roi']
   const coeffs = MAJOR_COEFFICIENTS[major] || MAJOR_COEFFICIENTS['Undecided']
 
   const results = schools.slice(0, 4).map((school) => {
@@ -172,7 +197,7 @@ export function compareOffers(schools, major, householdIncome, isInState, goal =
     const skillROI = npv * (1 - coeffs.signal_weight * (1 - 1 / prestige.multiplier))
     const signalROI = npv - skillROI
 
-    // Prestige score for prestige-goal weighting
+    // Prestige score for goal weighting
     const tierScore = { elite: 95, research: 78, flagship: 62, local: 45 }[tier] ?? 55
 
     return {
@@ -194,10 +219,22 @@ export function compareOffers(schools, major, householdIncome, isInState, goal =
     }
   })
 
-  // Sort by goal
-  results.sort((a, b) =>
-    goal === 'prestige' ? b.prestigeScore - a.prestigeScore : b.npv - a.npv
-  )
+  // Compute composite score: normalize each goal's raw scores to 0–1, then average
+  activeGoals.forEach((goalValue) => {
+    const rawScores = results.map((r) => goalRawScore(r, goalValue))
+    const minVal = Math.min(...rawScores)
+    const maxVal = Math.max(...rawScores)
+    const range = maxVal - minVal || 1
+    results.forEach((r, i) => {
+      r._compositeAccum = (r._compositeAccum || 0) + (rawScores[i] - minVal) / range
+    })
+  })
+  results.forEach((r) => {
+    r.compositeScore = parseFloat(((r._compositeAccum || 0) / activeGoals.length).toFixed(4))
+    delete r._compositeAccum
+  })
+
+  results.sort((a, b) => b.compositeScore - a.compositeScore)
 
   const best = results[0]
   const second = results[1]

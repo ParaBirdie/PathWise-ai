@@ -5,7 +5,7 @@ import { compareOffers } from '../../lib/npvEngine'
 import QuestionCard from './QuestionCard'
 
 export default function Q6Alumni() {
-  const { schools, major, incomeBracket, isInState, goal, setAlumniData, setComparisonResult, goNext } = useSurveyStore()
+  const { schools, major, incomeBracket, isInState, goals, setAlumniData, setComparisonResult, goNext } = useSurveyStore()
   const [counts, setCounts] = useState({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -33,7 +33,7 @@ export default function Q6Alumni() {
         major,
         incomeBracket?.value || 80000,
         isInState,
-        goal
+        goals
       )
       setComparisonResult(result)
       goNext()

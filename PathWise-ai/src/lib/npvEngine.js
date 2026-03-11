@@ -21,7 +21,7 @@
  *   NPV         = Benefit − Total Cost
  */
 
-import { MAJOR_COEFFICIENTS, UNIVERSITY_PRESTIGE, SCHOOL_TIER_MAP } from './economicData.js'
+import { MAJOR_COEFFICIENTS, UNIVERSITY_PRESTIGE, SCHOOL_TIER_MAP, SCHOOL_TUITION_MAP } from './economicData.js'
 
 const DISCOUNT_RATE = 0.05
 const SCHOOLING_YEARS = 4
@@ -38,6 +38,7 @@ export function estimateTuition(schoolName, isInState) {
   const tier = SCHOOL_TIER_MAP[schoolName] || 'flagship'
 
   if (name.includes('community') || name.includes('cc ')) return 5500
+  if (SCHOOL_TUITION_MAP[schoolName]) return SCHOOL_TUITION_MAP[schoolName]
   if (tier === 'elite') return DEFAULT_TUITION.private
   if (tier === 'research') return isInState ? 18000 : DEFAULT_TUITION.outOfState
   return isInState ? DEFAULT_TUITION.inState : DEFAULT_TUITION.outOfState

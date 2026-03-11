@@ -81,19 +81,35 @@ export const UNIVERSITY_PRESTIGE = {
 }
 
 export const SCHOOL_TIER_MAP = {
-  // Elite
+  // Elite private — names match Q1Schools.jsx / schema.sql school_name exactly
   'MIT': 'elite', 'Stanford': 'elite', 'Harvard': 'elite', 'Princeton': 'elite',
-  'Yale': 'elite', 'Columbia': 'elite', 'UPenn': 'elite', 'Caltech': 'elite',
-  'Duke': 'elite', 'Dartmouth': 'elite', 'Brown': 'elite', 'Cornell': 'elite',
-  'Northwestern': 'elite', 'Vanderbilt': 'elite', 'Rice': 'elite', 'Notre Dame': 'elite',
-  // Research
+  'Yale': 'elite', 'Caltech': 'elite',
+  'Duke University': 'elite', 'Johns Hopkins University': 'elite',
+  'Northwestern University': 'elite', 'Dartmouth College': 'elite',
+  'Brown University': 'elite', 'Vanderbilt University': 'elite',
+  'Rice University': 'elite', 'Washington University in St. Louis': 'elite',
+  'Emory University': 'elite', 'University of Notre Dame': 'elite',
+  'Georgetown University': 'elite', 'Tufts University': 'elite',
+  'Wake Forest University': 'elite', 'Boston College': 'elite',
+  // Research public
   'UCLA': 'research', 'UC Berkeley': 'research', 'Carnegie Mellon': 'research',
-  'NYU': 'research', 'Georgetown': 'research', 'Tufts': 'research',
-  'University of Michigan': 'research', 'UNC Chapel Hill': 'research',
+  'NYU': 'research', 'University of Michigan': 'research', 'UNC Chapel Hill': 'research',
   'University of Virginia': 'research', 'Boston University': 'research',
-  'Northeastern': 'research', 'Emory': 'research', 'Tulane': 'research',
-  'USC': 'research', 'Georgia Tech': 'research',
+  'Northeastern': 'research', 'Tulane': 'research', 'Georgia Tech': 'research',
   // Flagship defaults — everything else
+}
+
+export const SCHOOL_TUITION_MAP = {
+  // Elite private — tuition_private values from schema.sql
+  'MIT': 57986, 'Stanford': 56169, 'Harvard': 57261, 'Princeton': 57690, 'Yale': 59950,
+  'Caltech': 63411, 'Duke University': 63054, 'Johns Hopkins University': 63340,
+  'Northwestern University': 63468, 'Dartmouth College': 62430, 'Brown University': 65146,
+  'Vanderbilt University': 60348, 'Rice University': 54960,
+  'Washington University in St. Louis': 61750, 'Emory University': 58280,
+  'University of Notre Dame': 62693, 'Georgetown University': 62532,
+  'Tufts University': 65222, 'Wake Forest University': 62930, 'Boston College': 64208,
+  // Research private
+  'Carnegie Mellon': 58924, 'Northeastern': 59154, 'NYU': 58168,
 }
 
 export const INCOME_BRACKETS = [

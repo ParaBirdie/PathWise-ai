@@ -59,6 +59,8 @@ export default function Q1Schools() {
   const addSchool = (name) => {
     const trimmed = name.trim()
     if (!trimmed || schools.includes(trimmed) || schools.length >= 4) return
+    // Only accept names from the known-good allowlist to prevent arbitrary input
+    if (!ALL_UNIVERSITIES.includes(trimmed)) return
     setSchools([...schools, trimmed])
     setInput('')
   }
@@ -119,6 +121,7 @@ export default function Q1Schools() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type a school name..."
+              maxLength={120}
               className="flex-1 px-4 py-2.5 rounded-lg bg-white border border-[#e9e9e7] text-sm text-[#37352f] placeholder:text-[#c4c4c0] outline-none focus:ring-2 focus:ring-[#37352f]/10 focus:border-[#37352f]/40 transition-all"
             />
             <button

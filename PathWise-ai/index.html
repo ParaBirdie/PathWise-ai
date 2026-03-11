@@ -5,6 +5,30 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PathWise AI</title>
+
+    <!--
+      Content-Security-Policy
+      - default-src 'self'                        — same-origin resources only by default
+      - script-src 'self'                         — no inline scripts, no eval
+      - style-src 'self' 'unsafe-inline' fonts.googleapis.com — Tailwind inline styles + Google Fonts CSS
+      - font-src fonts.gstatic.com               — Google Fonts binary assets
+      - connect-src 'self' *.supabase.co wss://*.supabase.co — Supabase REST + Realtime
+      - img-src 'self' data:                      — no external image loading
+      - frame-ancestors 'none'                    — prevent clickjacking
+      - base-uri 'self'                           — prevent base-tag injection
+      - form-action 'self'                        — prevent form hijacking
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
+
+    <!-- Prevent MIME-type sniffing attacks -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+
+    <!-- Belt-and-suspenders clickjacking protection alongside frame-ancestors -->
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+
+    <!-- Limit referrer information sent to third parties -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />

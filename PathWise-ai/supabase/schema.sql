@@ -54,11 +54,14 @@ create table if not exists public.university_financials (
 -- ----------------------------------------------------------------
 create table if not exists public.survey_sessions (
   id              uuid primary key default uuid_generate_v4(),
-  session_token   text unique not null,
-  schools         text[]      not null,
-  major           text        not null,
-  residency       text,
-  income_bracket  text,
+  -- session_token must be a UUID generated server-side or by the client's anon JWT sub.
+  -- SECURITY: bind this to auth.uid() on insert so reads can be enforced via JWT.
+  session_token   text unique not null check (char_length(session_token) between 10 and 128),
+  -- Constrain array cardinality and element length to prevent data-bloat attacks
+  schools         text[]      not null check (cardinality(schools) between 1 and 4),
+  major           text        not null check (char_length(major) <= 100),
+  residency       text                 check (char_length(residency) <= 100),
+  income_bracket  text                 check (char_length(income_bracket) <= 50),
   goal            text        check (goal in ('roi','prestige')),
   result_snapshot jsonb,
   created_at      timestamptz default now()
@@ -79,14 +82,23 @@ drop policy if exists "Public read university_financials" on public.university_f
 create policy "Public read university_financials"
   on public.university_financials for select using (true);
 
+-- SECURITY: Only allow INSERT when the session_token matches the caller's JWT sub.
+-- This ties every persisted session to the Supabase anonymous auth identity,
+-- preventing any user from inserting rows on behalf of another identity.
+-- Callers must be signed-in (even anonymously) before inserting.
 drop policy if exists "Insert survey session" on public.survey_sessions;
 create policy "Insert survey session"
-  on public.survey_sessions for insert with check (true);
+  on public.survey_sessions for insert
+  with check (session_token = (auth.jwt() ->> 'sub'));
 
+-- SECURITY: Allow SELECT only for the row whose session_token equals the caller's JWT sub.
+-- auth.jwt() is the correct Supabase helper; it avoids the unreliable
+-- current_setting('request.jwt.claims') approach that could return NULL
+-- and silently bypass the filter.
 drop policy if exists "Read own survey session" on public.survey_sessions;
 create policy "Read own survey session"
   on public.survey_sessions for select
-  using (session_token = current_setting('request.jwt.claims', true)::json->>'sub');
+  using (session_token = (auth.jwt() ->> 'sub'));
 
 -- ----------------------------------------------------------------
 -- Seed: career_trajectories

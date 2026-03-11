@@ -1,33 +1,37 @@
 import { useSurveyStore } from '../../store/surveyStore'
 import { PRIMARY_GOALS } from '../../lib/economicData'
 import QuestionCard from './QuestionCard'
-import { TrendingUp, Star } from 'lucide-react'
+import { PiggyBank, TrendingUp, Briefcase, GraduationCap, Star, BookOpen, Check } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const ICONS = {
-  roi: TrendingUp,
-  prestige: Star,
+  minimize_cost: PiggyBank,
+  maximize_roi: TrendingUp,
+  industry_fit: Briefcase,
+  grad_school: GraduationCap,
+  prestige_optionality: Star,
+  program_strength: BookOpen,
 }
 
 export default function Q5Goal() {
-  const { goal, setGoal, goNext } = useSurveyStore()
+  const { goals, toggleGoal, goNext } = useSurveyStore()
 
   return (
     <QuestionCard
-      question="What's your primary goal?"
-      subtitle="This shapes how we rank and interpret your results."
+      question="What are your goals?"
+      subtitle="Select all that apply — this shapes how we rank your results."
       onNext={goNext}
-      canProgress={!!goal}
+      canProgress={goals.length > 0}
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {PRIMARY_GOALS.map(({ value, label, desc }) => {
           const Icon = ICONS[value]
-          const selected = goal === value
+          const selected = goals.includes(value)
           return (
             <motion.button
               key={value}
               whileTap={{ scale: 0.98 }}
-              onClick={() => setGoal(value)}
+              onClick={() => toggleGoal(value)}
               className={`flex items-start gap-4 p-5 rounded-xl border text-left transition-colors duration-150
                 ${selected
                   ? 'bg-[#37352f] text-white border-[#37352f]'
@@ -37,7 +41,7 @@ export default function Q5Goal() {
               <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
                 selected ? 'bg-white/15' : 'bg-[#f1f1ef]'
               }`}>
-                <Icon className="w-5 h-5" />
+                {selected ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
               </div>
               <div>
                 <p className="font-semibold text-base">{label}</p>

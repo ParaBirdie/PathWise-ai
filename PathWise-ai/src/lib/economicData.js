@@ -107,6 +107,10 @@ export const INCOME_BRACKETS = [
 export const FIELDS_OF_STUDY = Object.keys(MAJOR_COEFFICIENTS)
 
 export const PRIMARY_GOALS = [
-  { value: 'roi', label: 'Maximize ROI', desc: 'Find the best financial return on my investment' },
-  { value: 'prestige', label: 'Prestige & Connections', desc: 'Brand, network, and long-term signaling value' },
+  { value: 'minimize_cost', label: 'Minimize Total Cost', desc: 'Pay as little as possible — in-state tuition, net price, and scholarship access' },
+  { value: 'maximize_roi', label: 'Maximize ROI', desc: 'Find the best lifetime financial return on my investment' },
+  { value: 'industry_fit', label: 'Industry Fit', desc: 'Get into my target career — prestige matters more for finance, skills more for tech' },
+  { value: 'grad_school', label: 'Grad School Pipeline', desc: 'Maximize my odds of getting into a top PhD, MD, or JD program' },
+  { value: 'prestige_optionality', label: 'Prestige & Optionality', desc: 'Keep all doors open with a brand-name diploma and strong alumni network' },
+  { value: 'program_strength', label: 'Academic Program Strength', desc: 'Find the best department and faculty for my specific major' },
 ]

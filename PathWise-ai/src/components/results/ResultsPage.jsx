@@ -2,8 +2,11 @@ import { motion } from 'framer-motion'
 import { RefreshCw, TrendingUp } from 'lucide-react'
 import { useSurveyStore } from '../../store/surveyStore'
 import { formatCurrency } from '../../lib/npvEngine'
+import { PRIMARY_GOALS } from '../../lib/economicData'
 import WealthChart from './WealthChart'
 import SchoolCard from './SchoolCard'
+
+const GOAL_LABEL = Object.fromEntries(PRIMARY_GOALS.map(({ value, label }) => [value, label]))
 
 const SCHOOL_COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b']
 
@@ -16,7 +19,7 @@ const stagger = {
 }
 
 export default function ResultsPage() {
-  const { comparisonResult, major, goal, reset } = useSurveyStore()
+  const { comparisonResult, major, goals, reset } = useSurveyStore()
 
   if (!comparisonResult) return null
 
@@ -46,7 +49,7 @@ export default function ResultsPage() {
               Your PathWise Analysis
             </h1>
             <p className="text-[#6e6e73] text-sm">
-              {major} · {goal === 'roi' ? 'Maximizing ROI' : 'Prestige & Connections'} · 40-year projection
+              {major} · {goals.map((g) => GOAL_LABEL[g] ?? g).join(' · ')} · 40-year projection
             </p>
           </motion.div>
 

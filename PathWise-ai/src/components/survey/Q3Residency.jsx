@@ -29,9 +29,9 @@ export default function Q3Residency() {
 
   const select = (location) => {
     const isUS = US_STATES.includes(location)
-    // Check if any school is a state school that might be in-state
+    // Check if any school name contains the full state name (e.g. "University of Texas" contains "Texas")
     const probablyInState = isUS && schools.some((s) =>
-      s.toLowerCase().includes(location.toLowerCase().slice(0, 4))
+      s.toLowerCase().includes(location.toLowerCase())
     )
     setResidency(location, probablyInState)
     setQuery(location)

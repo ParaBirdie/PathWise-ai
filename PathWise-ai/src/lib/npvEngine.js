@@ -148,6 +148,13 @@ export function calculateNPV(schoolName, major, householdIncome, isInState) {
  * Compare two school offers. Returns enriched comparison object.
  */
 export function compareOffers(schools, major, householdIncome, isInState, goal = 'roi') {
+  if (!Array.isArray(schools) || schools.length === 0) {
+    throw new Error('compareOffers: schools must be a non-empty array')
+  }
+  if (typeof householdIncome !== 'number' || householdIncome < 0) {
+    throw new Error('compareOffers: householdIncome must be a non-negative number')
+  }
+
   const coeffs = MAJOR_COEFFICIENTS[major] || MAJOR_COEFFICIENTS['Undecided']
 
   const results = schools.slice(0, 4).map((school) => {

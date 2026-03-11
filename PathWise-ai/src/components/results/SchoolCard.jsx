@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { ChevronDown, ChevronUp, BadgeCheck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatCurrency } from '../../lib/npvEngine'
@@ -18,9 +18,10 @@ export default function SchoolCard({ result, rank, color }) {
   const isTop = rank === 0
 
   // Year-by-year breakdown (career years only, every 2 years)
-  const yearlyBreakdown = result.trajectory
-    .filter((t) => t.phase === 'career' && t.year % 2 === 0)
-    .slice(0, 12)
+  const yearlyBreakdown = useMemo(
+    () => result.trajectory.filter((t) => t.phase === 'career' && t.year % 2 === 0).slice(0, 12),
+    [result.trajectory]
+  )
 
   return (
     <div className={`glass rounded-3xl overflow-hidden shadow-xl shadow-black/[0.04] ${

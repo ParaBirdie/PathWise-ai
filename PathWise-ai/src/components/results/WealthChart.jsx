@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Legend,
@@ -28,15 +29,17 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function WealthChart({ results }) {
   // Build chart data: one row per year (1–44)
-  const maxYears = Math.max(...results.map((r) => r.trajectory.length))
-  const data = Array.from({ length: maxYears }, (_, i) => {
-    const row = { year: i + 1 }
-    results.forEach((r) => {
-      const point = r.trajectory[i]
-      if (point) row[r.school] = point.cumulativeWealth
+  const data = useMemo(() => {
+    const maxYears = Math.max(...results.map((r) => r.trajectory.length))
+    return Array.from({ length: maxYears }, (_, i) => {
+      const row = { year: i + 1 }
+      results.forEach((r) => {
+        const point = r.trajectory[i]
+        if (point) row[r.school] = point.cumulativeWealth
+      })
+      return row
     })
-    return row
-  })
+  }, [results])
 
   return (
     <div className="glass rounded-3xl p-6 shadow-xl shadow-black/[0.04]">

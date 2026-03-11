@@ -11,9 +11,14 @@ export default function Q6Alumni() {
   const [error, setError] = useState(null)
 
   const handleChange = (school, value) => {
+    if (value === '') {
+      setCounts((prev) => ({ ...prev, [school]: '' }))
+      return
+    }
     const parsed = parseInt(value, 10)
-    if (value !== '' && (isNaN(parsed) || parsed < 0)) return
-    setCounts((prev) => ({ ...prev, [school]: value === '' ? '' : parsed }))
+    if (isNaN(parsed) || parsed < 0) return
+    // Clamp to a sane maximum to prevent numeric overflow in future calculations
+    setCounts((prev) => ({ ...prev, [school]: Math.min(parsed, 1_000_000) }))
   }
 
   const handleFinish = async () => {
@@ -60,8 +65,9 @@ export default function Q6Alumni() {
             <input
               type="number"
               min="0"
+              max="1000000"
               placeholder="0"
-              value={counts[school] || ''}
+              value={counts[school] ?? ''}
               onChange={(e) => handleChange(school, e.target.value)}
               className="w-20 px-3 py-2.5 rounded-lg bg-white border border-[#e9e9e7] text-sm text-center text-[#37352f] outline-none focus:ring-2 focus:ring-[#37352f]/10 focus:border-[#37352f]/40 transition-all"
             />

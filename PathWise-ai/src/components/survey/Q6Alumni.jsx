@@ -4,6 +4,14 @@ import { useSurveyStore } from '../../store/surveyStore'
 import { compareOffers } from '../../lib/npvEngine'
 import QuestionCard from './QuestionCard'
 
+const ALUMNI_RANGES = [
+  { label: '0 – 5',    value: '0-5' },
+  { label: '5 – 10',   value: '5-10' },
+  { label: '10 – 20',  value: '10-20' },
+  { label: '20 – 50',  value: '20-50' },
+  { label: 'Above 50', value: '50+' },
+]
+
 export default function Q6Alumni() {
   const { schools, major, incomeBracket, isInState, goals, setAlumniData, setComparisonResult, goNext } = useSurveyStore()
   const [counts, setCounts] = useState({})
@@ -11,14 +19,7 @@ export default function Q6Alumni() {
   const [error, setError] = useState(null)
 
   const handleChange = (school, value) => {
-    if (value === '') {
-      setCounts((prev) => ({ ...prev, [school]: '' }))
-      return
-    }
-    const parsed = parseInt(value, 10)
-    if (isNaN(parsed) || parsed < 0) return
-    // Clamp to a sane maximum to prevent numeric overflow in future calculations
-    setCounts((prev) => ({ ...prev, [school]: Math.min(parsed, 1_000_000) }))
+    setCounts((prev) => ({ ...prev, [school]: value }))
   }
 
   const handleFinish = async () => {
@@ -62,15 +63,16 @@ export default function Q6Alumni() {
               </div>
               <span className="text-sm font-medium text-[#1d1d1f] truncate">{school}</span>
             </div>
-            <input
-              type="number"
-              min="0"
-              max="1000000"
-              placeholder="0"
+            <select
               value={counts[school] ?? ''}
               onChange={(e) => handleChange(school, e.target.value)}
-              className="w-20 px-3 py-2.5 rounded-lg bg-white border border-[#e9e9e7] text-sm text-center text-[#37352f] outline-none focus:ring-2 focus:ring-[#37352f]/10 focus:border-[#37352f]/40 transition-all"
-            />
+              className="w-28 px-3 py-2.5 rounded-lg bg-white border border-[#e9e9e7] text-sm text-center text-[#37352f] outline-none focus:ring-2 focus:ring-[#37352f]/10 focus:border-[#37352f]/40 transition-all appearance-none cursor-pointer"
+            >
+              <option value="" disabled>Select</option>
+              {ALUMNI_RANGES.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
           </div>
         ))}
       </div>

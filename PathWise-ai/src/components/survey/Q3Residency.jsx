@@ -21,6 +21,7 @@ const COUNTRIES = [
 export default function Q3Residency() {
   const { residency, setResidency, schools, goNext } = useSurveyStore()
   const [query, setQuery] = useState('')
+  const [showDropdown, setShowDropdown] = useState(false)
 
   const allOptions = [...US_STATES, ...COUNTRIES]
   const filtered = query
@@ -35,6 +36,7 @@ export default function Q3Residency() {
     )
     setResidency(location, probablyInState)
     setQuery(location)
+    setShowDropdown(false)
   }
 
   return (
@@ -50,13 +52,14 @@ export default function Q3Residency() {
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
+            setShowDropdown(true)
             if (!e.target.value) setResidency('', false)
           }}
           placeholder="Search state or country..."
           className="w-full px-4 py-2.5 rounded-lg bg-white border border-[#e9e9e7] text-sm text-[#37352f] placeholder:text-[#c4c4c0] outline-none focus:ring-2 focus:ring-[#37352f]/10 focus:border-[#37352f]/40 transition-all"
         />
 
-        {filtered.length > 0 && (
+        {showDropdown && filtered.length > 0 && (
           <div className="absolute top-full mt-2 left-0 right-0 bg-white border border-[#e9e9e7] rounded-lg shadow-sm z-10 overflow-hidden">
             {filtered.map((opt) => (
               <button
@@ -71,25 +74,7 @@ export default function Q3Residency() {
         )}
       </div>
 
-      {/* Quick picks */}
-      <div className="mt-6">
-        <p className="text-xs text-[#787774] mb-3">Common picks</p>
-        <div className="flex flex-wrap gap-2">
-          {['California','New York','Texas','Florida','Massachusetts','Illinois'].map((s) => (
-            <button
-              key={s}
-              onClick={() => select(s)}
-              className={`px-3 py-1.5 rounded-md border text-sm transition-colors duration-150 ${
-                residency === s
-                  ? 'bg-[#37352f] text-white border-[#37352f]'
-                  : 'bg-white border-[#e9e9e7] text-[#37352f] hover:bg-[#f1f1ef]'
-              }`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      </div>
+
     </QuestionCard>
   )
 }

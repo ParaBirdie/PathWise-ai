@@ -103,7 +103,8 @@ export default function ResultsPage() {
             <p className="text-xs text-[#6e6e73] leading-relaxed">
               <strong className="text-[#1d1d1f]">Methodology:</strong> Earnings modeled via the Quartic Mincerian equation
               (Murphy & Welch, 1990). NPV uses a 5% annual discount rate, 40-year career horizon, and includes
-              $35k/yr opportunity cost during college. Aid estimates are based on published FAFSA EFC curves.
+              $35k/yr opportunity cost during college. Aid figures reflect actual offer letter amounts where provided;
+              otherwise estimated from published FAFSA EFC curves by income bracket and school tier.
               Results are educational simulations — consult a financial advisor for personalized guidance.
             </p>
           </motion.div>

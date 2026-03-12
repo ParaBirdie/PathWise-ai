@@ -57,14 +57,18 @@ export default function SchoolCard({ result, rank, color }) {
         {/* Key metrics grid */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           {[
-            { label: 'Annual Tuition', value: formatCurrency(result.annualTuition, true) },
-            { label: 'Est. Aid / yr', value: formatCurrency(result.estimatedAid, true) },
-            { label: 'Entry Level Pay', value: formatCurrency(result.entryWage, true) },
-            { label: 'Year 10 Pay', value: formatCurrency(result.year10Wage, true) },
-          ].map(({ label, value }) => (
-            <div key={label} className="bg-black/[0.03] rounded-xl px-3 py-2.5">
-              <p className="text-xs text-[#6e6e73] mb-0.5">{label}</p>
-              <p className="text-sm font-semibold text-[#1d1d1f]">{value}</p>
+            { label: 'Annual Tuition', value: formatCurrency(result.annualTuition, true), highlight: false },
+            {
+              label: result.aidSource === 'actual' ? 'Your Aid / yr ✓' : 'Est. Aid / yr',
+              value: formatCurrency(result.aidUsed ?? result.estimatedAid, true),
+              highlight: result.aidSource === 'actual',
+            },
+            { label: 'Entry Level Pay', value: formatCurrency(result.entryWage, true), highlight: false },
+            { label: 'Year 10 Pay', value: formatCurrency(result.year10Wage, true), highlight: false },
+          ].map(({ label, value, highlight }) => (
+            <div key={label} className={`rounded-xl px-3 py-2.5 ${highlight ? 'bg-emerald-50' : 'bg-black/[0.03]'}`}>
+              <p className={`text-xs mb-0.5 ${highlight ? 'text-emerald-600' : 'text-[#6e6e73]'}`}>{label}</p>
+              <p className={`text-sm font-semibold ${highlight ? 'text-emerald-700' : 'text-[#1d1d1f]'}`}>{value}</p>
             </div>
           ))}
         </div>

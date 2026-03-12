@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Linkedin } from 'lucide-react'
 import { useSurveyStore } from '../../store/surveyStore'
-import { compareOffers } from '../../lib/npvEngine'
 import QuestionCard from './QuestionCard'
 
 const ALUMNI_RANGES = [
@@ -13,37 +12,16 @@ const ALUMNI_RANGES = [
 ]
 
 export default function Q6Alumni() {
-  const { schools, major, incomeBracket, isInState, goals, setAlumniData, setComparisonResult, goNext } = useSurveyStore()
+  const { schools, setAlumniData, goNext } = useSurveyStore()
   const [counts, setCounts] = useState({})
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
 
   const handleChange = (school, value) => {
     setCounts((prev) => ({ ...prev, [school]: value }))
   }
 
-  const handleFinish = async () => {
-    setLoading(true)
-    setError(null)
+  const handleFinish = () => {
     setAlumniData(counts)
-
-    try {
-      // Run the NPV comparison
-      const result = compareOffers(
-        schools,
-        major,
-        incomeBracket?.value || 80000,
-        isInState,
-        goals
-      )
-      setComparisonResult(result)
-      goNext()
-    } catch (err) {
-      setError('Calculation failed. Please check your inputs and try again.')
-      console.error('compareOffers error:', err)
-    } finally {
-      setLoading(false)
-    }
+    goNext()
   }
 
   return (
@@ -52,7 +30,7 @@ export default function Q6Alumni() {
       subtitle="Open LinkedIn and search '[School] + [Dream Company]'. Enter the count for each school. This is optional but improves the signal score."
       onNext={handleFinish}
       canProgress={true}
-      nextLabel={loading ? 'Calculating…' : 'See My Results →'}
+      nextLabel="Continue →"
     >
       <div className="flex flex-col gap-3">
         {schools.map((school) => (
@@ -76,12 +54,6 @@ export default function Q6Alumni() {
           </div>
         ))}
       </div>
-
-      {error && (
-        <div className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200">
-          <p className="text-xs text-red-600">{error}</p>
-        </div>
-      )}
 
       <div className="mt-6 p-4 rounded-lg bg-[#f7f7f5] border border-[#e9e9e7]">
         <p className="text-xs text-[#787774] leading-relaxed">

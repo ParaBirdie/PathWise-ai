@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { GraduationCap, CircleDollarSign } from 'lucide-react'
 import { useSurveyStore } from '../../store/surveyStore'
-import { compareOffers } from '../../lib/npvEngine'
+import { compareOffers, setUniversityMaps } from '../../lib/npvEngine'
+import { fetchUniversityMaps } from '../../lib/universityService'
 import { supabase } from '../../lib/supabase'
 import QuestionCard from './QuestionCard'
 
@@ -56,6 +57,10 @@ export default function Q7FinancialAid() {
     })
 
     try {
+      // Load live university data from Supabase (falls back to static maps on error)
+      const maps = await fetchUniversityMaps()
+      if (maps) setUniversityMaps(maps.tierMap, maps.tuitionMap)
+
       // Run NPV comparison with actual aid amounts
       const result = compareOffers(
         schools,

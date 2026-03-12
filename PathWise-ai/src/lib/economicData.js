@@ -81,7 +81,7 @@ export const UNIVERSITY_PRESTIGE = {
 }
 
 export const SCHOOL_TIER_MAP = {
-  // Elite private — names match Q1Schools.jsx / schema.sql school_name exactly
+  // ── Elite Private ────────────────────────────────────────────────────────────
   'MIT': 'elite', 'Stanford': 'elite', 'Harvard': 'elite', 'Princeton': 'elite',
   'Yale': 'elite', 'Caltech': 'elite',
   'Duke University': 'elite', 'Johns Hopkins University': 'elite',
@@ -91,16 +91,74 @@ export const SCHOOL_TIER_MAP = {
   'Emory University': 'elite', 'University of Notre Dame': 'elite',
   'Georgetown University': 'elite', 'Tufts University': 'elite',
   'Wake Forest University': 'elite', 'Boston College': 'elite',
-  // Research public
-  'UCLA': 'research', 'UC Berkeley': 'research', 'Carnegie Mellon': 'research',
-  'NYU': 'research', 'University of Michigan': 'research', 'UNC Chapel Hill': 'research',
-  'University of Virginia': 'research', 'Boston University': 'research',
-  'Northeastern': 'research', 'Tulane': 'research', 'Georgia Tech': 'research',
-  // Flagship defaults — everything else
+
+  // ── Research Public ──────────────────────────────────────────────────────────
+  'UC Berkeley': 'research', 'UCLA': 'research', 'Carnegie Mellon': 'research',
+  'Georgia Tech': 'research', 'University of Michigan': 'research',
+  'Northeastern': 'research', 'NYU': 'research',
+  'University of Virginia': 'research', 'UNC Chapel Hill': 'research',
+  'University of Wisconsin–Madison': 'research',
+  'University of Illinois Urbana-Champaign': 'research',
+  'Ohio State University': 'research', 'Penn State University': 'research',
+  'Purdue University': 'research', 'University of Washington': 'research',
+  'Arizona State University': 'research', 'Michigan State University': 'research',
+  'UC San Diego': 'research', 'UC Davis': 'research', 'UC Santa Barbara': 'research',
+  'UC Irvine': 'research', 'UC Santa Cruz': 'research',
+  'UT Austin': 'research', 'University of Florida': 'research',
+  'UMass Amherst': 'research', 'Rutgers University': 'research',
+  'Virginia Tech': 'research', 'University of Maryland': 'research',
+  'University of Colorado Boulder': 'research',
+  'Indiana University Bloomington': 'research',
+  'University of Minnesota': 'research', 'Clemson University': 'research',
+  'University of Connecticut': 'research',
+
+  // ── Research Private ─────────────────────────────────────────────────────────
+  'Boston University': 'research', 'George Washington University': 'research',
+  'American University': 'research', 'Fordham University': 'research',
+  'Villanova University': 'research', 'Case Western Reserve University': 'research',
+  'Rensselaer Polytechnic Institute': 'research',
+  'Worcester Polytechnic Institute': 'research',
+  'Stevens Institute of Technology': 'research', 'Lehigh University': 'research',
+  'Drexel University': 'research', 'Syracuse University': 'research',
+  'Tulane University': 'research', 'University of Miami': 'research',
+  'University of Denver': 'research', 'Gonzaga University': 'research',
+  'Marquette University': 'research', 'Seton Hall University': 'research',
+  'DePaul University': 'research', 'Loyola University Chicago': 'research',
+
+  // ── Local / Regional ─────────────────────────────────────────────────────────
+  // These would otherwise fall back to 'flagship' which is incorrect
+  'Babson College': 'local', 'Bentley University': 'local',
+  'Providence College': 'local', 'College of the Holy Cross': 'local',
+  'Fairfield University': 'local', 'Quinnipiac University': 'local',
+  'Sacred Heart University': 'local', 'Marist College': 'local',
+  'Bryant University': 'local', 'Roger Williams University': 'local',
+  'Hofstra University': 'local', 'Pace University': 'local',
+  'CUNY Baruch College': 'local',
+
+  // ── Flagship State ───────────────────────────────────────────────────────────
+  // Listed explicitly for clarity; matches the 'flagship' default fallback
+  'Florida State University': 'flagship', 'University of Alabama': 'flagship',
+  'Auburn University': 'flagship', 'Iowa State University': 'flagship',
+  'University of Iowa': 'flagship', 'University of Kansas': 'flagship',
+  'Kansas State University': 'flagship', 'University of Missouri': 'flagship',
+  'University of Tennessee': 'flagship', 'University of Kentucky': 'flagship',
+  'University of Arkansas': 'flagship', 'University of Oklahoma': 'flagship',
+  'Oklahoma State University': 'flagship', 'Louisiana State University': 'flagship',
+  'University of South Carolina': 'flagship', 'University of Vermont': 'flagship',
+  'University of Oregon': 'flagship', 'University of Arizona': 'flagship',
+  'Miami University Ohio': 'flagship', 'Colorado State University': 'flagship',
+  'University of Utah': 'flagship', 'Utah State University': 'flagship',
+  'University of Nevada Las Vegas': 'flagship', 'University of New Mexico': 'flagship',
+  'West Virginia University': 'flagship', 'University of Mississippi': 'flagship',
+  'Mississippi State University': 'flagship', 'University of Nebraska–Lincoln': 'flagship',
+  'University of Wyoming': 'flagship',
+  'SUNY Buffalo': 'flagship', 'SUNY Stony Brook': 'flagship', 'SUNY Binghamton': 'flagship',
+  'Cal Poly San Luis Obispo': 'flagship',
+  'San Diego State University': 'flagship', 'San Jose State University': 'flagship',
 }
 
 export const SCHOOL_TUITION_MAP = {
-  // Elite private — tuition_private values from schema.sql
+  // ── Elite Private — tuition_private from schema.sql ──────────────────────────
   'MIT': 57986, 'Stanford': 56169, 'Harvard': 57261, 'Princeton': 57690, 'Yale': 59950,
   'Caltech': 63411, 'Duke University': 63054, 'Johns Hopkins University': 63340,
   'Northwestern University': 63468, 'Dartmouth College': 62430, 'Brown University': 65146,
@@ -108,8 +166,30 @@ export const SCHOOL_TUITION_MAP = {
   'Washington University in St. Louis': 61750, 'Emory University': 58280,
   'University of Notre Dame': 62693, 'Georgetown University': 62532,
   'Tufts University': 65222, 'Wake Forest University': 62930, 'Boston College': 64208,
-  // Research private
+
+  // ── Research Private — tuition_private from schema.sql ───────────────────────
+  // Public research schools are intentionally excluded — their in/out-of-state
+  // tuition is handled by the isInState tier-based fallback in estimateTuition()
   'Carnegie Mellon': 58924, 'Northeastern': 59154, 'NYU': 58168,
+  'Boston University': 61050, 'George Washington University': 62560,
+  'American University': 54506, 'Fordham University': 58194,
+  'Villanova University': 62240, 'Case Western Reserve University': 59870,
+  'Rensselaer Polytechnic Institute': 60285, 'Worcester Polytechnic Institute': 57460,
+  'Stevens Institute of Technology': 60410, 'Lehigh University': 62730,
+  'Drexel University': 57560, 'Syracuse University': 59106,
+  'Tulane University': 62608, 'University of Miami': 58322,
+  'University of Denver': 57162, 'Gonzaga University': 51510,
+  'Marquette University': 46380, 'Seton Hall University': 44656,
+  'DePaul University': 41424, 'Loyola University Chicago': 48600,
+
+  // ── Local / Regional Private — tuition_private from schema.sql ───────────────
+  'Babson College': 55656, 'Bentley University': 55760,
+  'Providence College': 54490, 'College of the Holy Cross': 58620,
+  'Fairfield University': 54950, 'Quinnipiac University': 51630,
+  'Sacred Heart University': 47490, 'Marist College': 43740,
+  'Bryant University': 51992, 'Roger Williams University': 39748,
+  'Hofstra University': 52480, 'Pace University': 48100,
+  // CUNY Baruch College is public — uses tier-based in/out-of-state fallback
 }
 
 export const INCOME_BRACKETS = [

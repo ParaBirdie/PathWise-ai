@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Linkedin } from 'lucide-react'
 import { useSurveyStore } from '../../store/surveyStore'
-import { compareOffers } from '../../lib/npvEngine'
+import { compareOffers, setUniversityMaps } from '../../lib/npvEngine'
+import { fetchUniversityMaps } from '../../lib/universityService'
 import QuestionCard from './QuestionCard'
 
 const ALUMNI_RANGES = [
@@ -28,6 +29,10 @@ export default function Q6Alumni() {
     setAlumniData(counts)
 
     try {
+      // Load live university data from Supabase (gracefully falls back to static maps on error)
+      const maps = await fetchUniversityMaps()
+      if (maps) setUniversityMaps(maps.tierMap, maps.tuitionMap)
+
       // Run the NPV comparison
       const result = compareOffers(
         schools,

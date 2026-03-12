@@ -23,6 +23,22 @@
 
 import { MAJOR_COEFFICIENTS, UNIVERSITY_PRESTIGE, SCHOOL_TIER_MAP, SCHOOL_TUITION_MAP } from './economicData.js'
 
+// Runtime-overridable maps — start with the static seed data from economicData.js.
+// Call setUniversityMaps() (e.g. from Q6Alumni after fetching Supabase) to inject
+// live DB values so newly added schools are automatically correct without a code deploy.
+let _tierMap = SCHOOL_TIER_MAP
+let _tuitionMap = SCHOOL_TUITION_MAP
+
+/**
+ * Override the tier and tuition maps with live data from the database.
+ * DB values are merged on top of the static fallbacks, so the static data
+ * still covers any school the DB query might miss.
+ */
+export function setUniversityMaps(tierMap, tuitionMap) {
+  _tierMap = { ...SCHOOL_TIER_MAP, ...tierMap }
+  _tuitionMap = { ...SCHOOL_TUITION_MAP, ...tuitionMap }
+}
+
 const DISCOUNT_RATE = 0.05
 const SCHOOLING_YEARS = 4
 const CAREER_YEARS = 40
@@ -35,10 +51,10 @@ const DEFAULT_TUITION = { inState: 12000, outOfState: 36000, private: 58000 }
  */
 export function estimateTuition(schoolName, isInState) {
   const name = schoolName?.toLowerCase() || ''
-  const tier = SCHOOL_TIER_MAP[schoolName] || 'flagship'
+  const tier = _tierMap[schoolName] || 'flagship'
 
   if (name.includes('community') || name.includes('cc ')) return 5500
-  if (SCHOOL_TUITION_MAP[schoolName]) return SCHOOL_TUITION_MAP[schoolName]
+  if (_tuitionMap[schoolName]) return _tuitionMap[schoolName]
   if (tier === 'elite') return DEFAULT_TUITION.private
   if (tier === 'research') return isInState ? 18000 : DEFAULT_TUITION.outOfState
   return isInState ? DEFAULT_TUITION.inState : DEFAULT_TUITION.outOfState
@@ -48,7 +64,7 @@ export function estimateTuition(schoolName, isInState) {
  * Estimate financial aid based on household income and university tier.
  */
 export function estimateAid(householdIncome, schoolName) {
-  const tier = SCHOOL_TIER_MAP[schoolName] || 'flagship'
+  const tier = _tierMap[schoolName] || 'flagship'
   const tierData = UNIVERSITY_PRESTIGE[tier] || UNIVERSITY_PRESTIGE.flagship
   const aidBase = tierData.aid_base
   const sensitivity = tierData.aid_income_sensitivity
@@ -82,7 +98,7 @@ function mincerLogWage(coeffs, experienceYear) {
  */
 export function buildTrajectory(schoolName, major, householdIncome, isInState, startAge = 18) {
   const coeffs = MAJOR_COEFFICIENTS[major] || MAJOR_COEFFICIENTS['Undecided']
-  const tier = SCHOOL_TIER_MAP[schoolName] || 'flagship'
+  const tier = _tierMap[schoolName] || 'flagship'
   const prestige = UNIVERSITY_PRESTIGE[tier] || UNIVERSITY_PRESTIGE.flagship
 
   const annualTuition = estimateTuition(schoolName, isInState)
@@ -187,7 +203,7 @@ export function compareOffers(schools, major, householdIncome, isInState, goals 
     const { npv, trajectory, annualTuition, estimatedAid } = calculateNPV(
       school, major, householdIncome, isInState
     )
-    const tier = SCHOOL_TIER_MAP[school] || 'flagship'
+    const tier = _tierMap[school] || 'flagship'
     const prestige = UNIVERSITY_PRESTIGE[tier] || UNIVERSITY_PRESTIGE.flagship
 
     const careerTrajectory = trajectory.filter((t) => t.phase === 'career')

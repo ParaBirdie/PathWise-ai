@@ -62,9 +62,10 @@ create table if not exists public.survey_sessions (
   major           text        not null check (char_length(major) <= 100),
   residency       text                 check (char_length(residency) <= 100),
   income_bracket  text                 check (char_length(income_bracket) <= 50),
-  goals           text[],
-  result_snapshot jsonb,
-  created_at      timestamptz default now()
+  goals                text[],
+  financial_aid_offers jsonb,       -- { "Harvard": 45000, "Duke University": null } null = user skipped
+  result_snapshot      jsonb,
+  created_at           timestamptz default now()
 );
 
 -- ----------------------------------------------------------------

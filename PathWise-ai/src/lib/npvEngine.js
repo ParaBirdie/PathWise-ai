@@ -14,7 +14,7 @@
  *   β1–4 = quartic experience-earnings coefficients
  *
  * NPV Components:
- *   Cost        = (annual_tuition × 4) − estimated_aid
+ *   Cost        = (annual_tuition × 4) − aid
  *   Opp. Cost   = 4 × $35,000 (foregone wages during college)
  *   Total Cost  = Cost + Opp. Cost (discounted)
  *   Benefit     = Sum of discounted annual earnings over 40-year horizon
@@ -94,15 +94,23 @@ function mincerLogWage(coeffs, experienceYear) {
 
 /**
  * Build the full year-by-year trajectory for one school offer.
+ * @param {string} schoolName
+ * @param {string} major
+ * @param {number} householdIncome
+ * @param {boolean} isInState
+ * @param {number} [startAge=18]
+ * @param {number|null} [actualAid=null] - Actual aid from offer letter; if null, estimated from FAFSA curve
  * Returns an array of { year, age, wage, cumulativeWealth } objects.
  */
-export function buildTrajectory(schoolName, major, householdIncome, isInState, startAge = 18) {
+export function buildTrajectory(schoolName, major, householdIncome, isInState, startAge = 18, actualAid = null) {
   const coeffs = MAJOR_COEFFICIENTS[major] || MAJOR_COEFFICIENTS['Undecided']
   const tier = _tierMap[schoolName] || 'flagship'
   const prestige = UNIVERSITY_PRESTIGE[tier] || UNIVERSITY_PRESTIGE.flagship
 
   const annualTuition = estimateTuition(schoolName, isInState)
-  const annualAid = estimateAid(householdIncome, schoolName)
+  const annualAid = (actualAid !== null && actualAid !== undefined)
+    ? actualAid
+    : estimateAid(householdIncome, schoolName)
   const netAnnualCost = Math.max(0, annualTuition - annualAid)
 
   const trajectory = []
@@ -149,15 +157,23 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
 
 /**
  * Calculate NPV for one school offer.
+ * @param {string} schoolName
+ * @param {string} major
+ * @param {number} householdIncome
+ * @param {boolean} isInState
+ * @param {number|null} [actualAid=null] - Actual aid from offer letter; if null, uses FAFSA estimate
  */
-export function calculateNPV(schoolName, major, householdIncome, isInState) {
-  const trajectory = buildTrajectory(schoolName, major, householdIncome, isInState)
+export function calculateNPV(schoolName, major, householdIncome, isInState, actualAid = null) {
+  const trajectory = buildTrajectory(schoolName, major, householdIncome, isInState, 18, actualAid)
   const finalEntry = trajectory[trajectory.length - 1]
+  const estimatedAidFallback = estimateAid(householdIncome, schoolName)
   return {
     npv: finalEntry.cumulativeWealth,
     trajectory,
     annualTuition: estimateTuition(schoolName, isInState),
-    estimatedAid: estimateAid(householdIncome, schoolName),
+    estimatedAid: estimatedAidFallback,
+    actualAid,
+    aidSource: actualAid !== null ? 'actual' : 'estimated',
   }
 }
 
@@ -186,9 +202,14 @@ function goalRawScore(result, goalValue) {
 
 /**
  * Compare school offers. Returns enriched comparison object.
+ * @param {string[]} schools
+ * @param {string} major
+ * @param {number} householdIncome
+ * @param {boolean} isInState
  * @param {string[]} goals - Array of PRIMARY_GOALS values; falls back to ['maximize_roi']
+ * @param {Object} [financialAidOffers={}] - Map of { [schoolName]: number | null } from offer letters
  */
-export function compareOffers(schools, major, householdIncome, isInState, goals = ['maximize_roi']) {
+export function compareOffers(schools, major, householdIncome, isInState, goals = ['maximize_roi'], financialAidOffers = {}) {
   if (!Array.isArray(schools) || schools.length === 0) {
     throw new Error('compareOffers: schools must be a non-empty array')
   }
@@ -200,8 +221,9 @@ export function compareOffers(schools, major, householdIncome, isInState, goals 
   const coeffs = MAJOR_COEFFICIENTS[major] || MAJOR_COEFFICIENTS['Undecided']
 
   const results = schools.slice(0, 4).map((school) => {
-    const { npv, trajectory, annualTuition, estimatedAid } = calculateNPV(
-      school, major, householdIncome, isInState
+    const actualAid = financialAidOffers[school] ?? null
+    const { npv, trajectory, annualTuition, estimatedAid, aidSource } = calculateNPV(
+      school, major, householdIncome, isInState, actualAid
     )
     const tier = _tierMap[school] || 'flagship'
     const prestige = UNIVERSITY_PRESTIGE[tier] || UNIVERSITY_PRESTIGE.flagship
@@ -209,6 +231,9 @@ export function compareOffers(schools, major, householdIncome, isInState, goals 
     const careerTrajectory = trajectory.filter((t) => t.phase === 'career')
     const entryWage = careerTrajectory[0]?.wage || 0
     const year10Wage = careerTrajectory[9]?.wage || 0
+
+    // The aid amount actually used in the calculation
+    const aidUsed = actualAid !== null ? actualAid : estimatedAid
 
     // Signal vs Skill decomposition
     const skillROI = npv * (1 - coeffs.signal_weight * (1 - 1 / prestige.multiplier))
@@ -224,7 +249,9 @@ export function compareOffers(schools, major, householdIncome, isInState, goals 
       trajectory,
       annualTuition,
       estimatedAid,
-      netCostTotal: Math.round((annualTuition - estimatedAid) * 4),
+      aidUsed,
+      aidSource,
+      netCostTotal: Math.round((annualTuition - aidUsed) * 4),
       entryWage,
       year10Wage,
       signalWeight: Math.round(coeffs.signal_weight * 100),

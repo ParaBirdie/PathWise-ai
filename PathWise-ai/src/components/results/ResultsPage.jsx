@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { RefreshCw, TrendingUp } from 'lucide-react'
 import { useSurveyStore } from '../../store/surveyStore'
 import { formatCurrency } from '../../lib/npvEngine'
 import { PRIMARY_GOALS } from '../../lib/economicData'
+import { fetchLatestQuestionData } from '../../lib/questionDataService'
 import WealthChart from './WealthChart'
 import SchoolCard from './SchoolCard'
 
@@ -19,7 +21,29 @@ const stagger = {
 }
 
 export default function ResultsPage() {
-  const { comparisonResult, major, goals, reset } = useSurveyStore()
+  const { comparisonResult, major, goals, reset, setComparisonResult } = useSurveyStore()
+  const [loading, setLoading] = useState(!comparisonResult)
+
+  // If comparisonResult is missing (e.g. page was reloaded), recover it
+  // from the most recent question_data row saved for this anonymous user.
+  useEffect(() => {
+    if (comparisonResult) { setLoading(false); return }
+
+    fetchLatestQuestionData().then(({ data }) => {
+      if (data?.result_snapshot) {
+        setComparisonResult(data.result_snapshot)
+      }
+      setLoading(false)
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
+        <p className="text-sm text-[#6e6e73]">Loading your results…</p>
+      </div>
+    )
+  }
 
   if (!comparisonResult) return null
 

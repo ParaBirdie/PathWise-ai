@@ -2,6 +2,7 @@ import { useSurveyStore } from '../../store/surveyStore'
 import QuestionCard from './QuestionCard'
 import { motion } from 'framer-motion'
 import { Sun, Snowflake, Cloud, Wind } from 'lucide-react'
+import { logQuestionData } from '../../lib/questionDataService'
 
 const WORK_HOURS = [
   { label: 'Less than 20 hours', value: '<20h' },
@@ -37,13 +38,29 @@ export default function Q8Priorities() {
     greekLife, setGreekLife,
     weatherPref, setWeatherPref,
     goNext,
+    comparisonResult,
+    schools, major, residency, isInState, incomeBracket,
+    goals, alumniData, financialAidOffers, studentRatings,
   } = useSurveyStore()
+
+  const handleNext = () => {
+    // Log all Q1–Q9 inputs + NPV result to question_data (non-blocking)
+    logQuestionData(
+      {
+        schools, major, residency, isInState, incomeBracket,
+        goals, alumniData, financialAidOffers, studentRatings,
+        workHours, interests, greekLife, weatherPref,
+      },
+      comparisonResult
+    )
+    goNext()
+  }
 
   return (
     <QuestionCard
       question="What are your priorities?"
       subtitle="Help us understand what matters most to you outside the classroom."
-      onNext={goNext}
+      onNext={handleNext}
       canProgress={!!workHours}
     >
       {/* a) Work hours */}

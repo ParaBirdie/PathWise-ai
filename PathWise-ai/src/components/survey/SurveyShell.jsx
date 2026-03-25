@@ -21,7 +21,7 @@ const slideVariants = {
 export default function SurveyShell({ stepKey, children }) {
   const direction = useSurveyStore((s) => s.direction)
   const currentStep = useSurveyStore((s) => s.currentStep)
-  const TOTAL_QUESTIONS = 9
+  const TOTAL_QUESTIONS = 10
 
   return (
     <div className="relative min-h-screen bg-[#f7f7f5] flex flex-col items-center justify-center px-6 py-20 overflow-hidden">

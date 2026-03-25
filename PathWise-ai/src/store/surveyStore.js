@@ -4,6 +4,8 @@ export const useSurveyStore = create((set, get) => ({
   // Survey answers
   schools: [],               // Q1: string[]
   major: '',                 // Q2: string
+  careerIndustry: '',        // Q2b: string
+  careerRole: '',            // Q2b: string
   residency: '',             // Q3: string (state/country)
   isInState: false,          // derived from Q3
   incomeBracket: null,       // Q4: { label, value }
@@ -17,7 +19,7 @@ export const useSurveyStore = create((set, get) => ({
   weatherPref: '',           // Q9: string — preferred weather
 
   // Navigation
-  currentStep: 0,        // 0 = landing, 1–9 = questions, 10 = results
+  currentStep: 0,        // 0 = landing, 1–10 = questions, 11 = results
   direction: 1,          // 1 = forward, -1 = back
 
   // Results cache
@@ -26,6 +28,7 @@ export const useSurveyStore = create((set, get) => ({
   // Actions
   setSchools: (schools) => set({ schools }),
   setMajor: (major) => set({ major }),
+  setCareer: (careerIndustry, careerRole) => set({ careerIndustry, careerRole }),
   setResidency: (residency, isInState) => set({ residency, isInState }),
   setIncomeBracket: (incomeBracket) => set({ incomeBracket }),
   toggleGoal: (value) => set((state) => ({
@@ -55,7 +58,7 @@ export const useSurveyStore = create((set, get) => ({
     set({ currentStep: step, direction: step > currentStep ? 1 : -1 })
   },
   reset: () => set({
-    schools: [], major: '', residency: '', isInState: false,
+    schools: [], major: '', careerIndustry: '', careerRole: '', residency: '', isInState: false,
     incomeBracket: null, goals: [], alumniData: {}, financialAidOffers: {}, studentRatings: {},
     workHours: '', interests: '', greekLife: '', weatherPref: '',
     currentStep: 0, direction: 1, comparisonResult: null,

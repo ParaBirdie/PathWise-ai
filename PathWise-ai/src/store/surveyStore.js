@@ -10,6 +10,7 @@ export const useSurveyStore = create((set, get) => ({
   goals: [],                 // Q5: string[] — one or more of the PRIMARY_GOALS values
   alumniData: {},            // Q6: { [school]: string (range) }
   financialAidOffers: {},    // Q7: { [school]: number | null } — null means user skipped
+  studentRatings: {},        // Q8: { [school]: number (1–10) }
 
   // Navigation
   currentStep: 0,        // 0 = landing, 1–7 = questions, 8 = results
@@ -30,6 +31,7 @@ export const useSurveyStore = create((set, get) => ({
   })),
   setAlumniData: (alumniData) => set({ alumniData }),
   setFinancialAidOffers: (financialAidOffers) => set({ financialAidOffers }),
+  setStudentRatings: (studentRatings) => set({ studentRatings }),
   setComparisonResult: (comparisonResult) => set({ comparisonResult }),
 
   goNext: () => {
@@ -46,7 +48,7 @@ export const useSurveyStore = create((set, get) => ({
   },
   reset: () => set({
     schools: [], major: '', residency: '', isInState: false,
-    incomeBracket: null, goals: [], alumniData: {}, financialAidOffers: {},
+    incomeBracket: null, goals: [], alumniData: {}, financialAidOffers: {}, studentRatings: {},
     currentStep: 0, direction: 1, comparisonResult: null,
   }),
 }))

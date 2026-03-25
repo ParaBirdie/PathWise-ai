@@ -514,11 +514,9 @@ const CAREER_DATA = [
 
 export default function Q2bCareer() {
   const { careerIndustry, careerRole, setCareer, goNext } = useSurveyStore()
-  const [hoveredIndustry, setHoveredIndustry] = useState(
-    careerIndustry || CAREER_DATA[0].industry
-  )
+  const [hoveredIndustry, setHoveredIndustry] = useState(careerIndustry || null)
 
-  const activeData = CAREER_DATA.find((d) => d.industry === hoveredIndustry)
+  const activeData = CAREER_DATA.find((d) => d.industry === hoveredIndustry) || null
 
   return (
     <QuestionCard
@@ -527,9 +525,9 @@ export default function Q2bCareer() {
       onNext={goNext}
       canProgress={!!careerRole}
     >
-      <div className="flex gap-4 min-h-0">
+      <div className="flex gap-4 h-[400px]">
         {/* Left: Industry list */}
-        <div className="w-5/12 flex flex-col gap-1.5 shrink-0">
+        <div className="w-5/12 shrink-0 h-full overflow-y-auto flex flex-col gap-1.5 pr-1">
           {CAREER_DATA.map((item) => {
             const isActive = hoveredIndustry === item.industry
             const isSelected = careerIndustry === item.industry
@@ -554,13 +552,20 @@ export default function Q2bCareer() {
         </div>
 
         {/* Right: Roles panel */}
-        <div className="flex-1 overflow-y-auto max-h-[420px] pr-1">
-          {activeData && (
+        <div className="flex-1 h-full overflow-y-auto overflow-x-hidden">
+          {!activeData ? (
+            <div className="h-full flex items-center justify-center">
+              <p className="text-sm text-[#c4c4c0] text-center px-4">
+                Hover an industry on the left to see available roles
+              </p>
+            </div>
+          ) : (
             <motion.div
               key={activeData.industry}
-              initial={{ opacity: 0, x: 6 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.15 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.12 }}
+              className="pr-1"
             >
               <p className="text-xs text-[#787774] mb-4 leading-relaxed">
                 {activeData.description}

@@ -9,6 +9,7 @@ import Q5Goal from './components/survey/Q5Goal'
 import Q6Alumni from './components/survey/Q6Alumni'
 import Q7FinancialAid from './components/survey/Q7FinancialAid'
 import Q8StudentRating from './components/survey/Q8StudentRating'
+import Q9Priorities from './components/survey/Q9Priorities'
 import ResultsPage from './components/results/ResultsPage'
 
 const STEPS = [
@@ -21,13 +22,14 @@ const STEPS = [
   { key: 'q6',       Component: Q6Alumni },
   { key: 'q7',       Component: Q7FinancialAid },
   { key: 'q8',       Component: Q8StudentRating },
+  { key: 'q9',       Component: Q9Priorities },
   { key: 'results',  Component: ResultsPage },
 ]
 
 export default function App() {
   const currentStep = useSurveyStore((s) => s.currentStep)
 
-  if (currentStep === 9) {
+  if (currentStep === 10) {
     return <ResultsPage />
   }
 

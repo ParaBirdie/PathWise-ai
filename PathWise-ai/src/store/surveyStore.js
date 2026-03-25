@@ -12,9 +12,14 @@ export const useSurveyStore = create((set, get) => ({
   goals: [],                 // Q5: string[] — one or more of the PRIMARY_GOALS values
   alumniData: {},            // Q6: { [school]: string (range) }
   financialAidOffers: {},    // Q7: { [school]: number | null } — null means user skipped
+  studentRatings: {},        // Q8: { [school]: number (1–10) }
+  workHours: '',             // Q9: string — selected work hours bracket
+  interests: '',             // Q9: string — free-text interests
+  greekLife: '',             // Q9: string — greek life importance
+  weatherPref: '',           // Q9: string — preferred weather
 
   // Navigation
-  currentStep: 0,        // 0 = landing, 1–7 = questions, 8 = results
+  currentStep: 0,        // 0 = landing, 1–10 = questions, 11 = results
   direction: 1,          // 1 = forward, -1 = back
 
   // Results cache
@@ -33,6 +38,11 @@ export const useSurveyStore = create((set, get) => ({
   })),
   setAlumniData: (alumniData) => set({ alumniData }),
   setFinancialAidOffers: (financialAidOffers) => set({ financialAidOffers }),
+  setStudentRatings: (studentRatings) => set({ studentRatings }),
+  setWorkHours: (workHours) => set({ workHours }),
+  setInterests: (interests) => set({ interests }),
+  setGreekLife: (greekLife) => set({ greekLife }),
+  setWeatherPref: (weatherPref) => set({ weatherPref }),
   setComparisonResult: (comparisonResult) => set({ comparisonResult }),
 
   goNext: () => {
@@ -49,7 +59,8 @@ export const useSurveyStore = create((set, get) => ({
   },
   reset: () => set({
     schools: [], major: '', careerIndustry: '', careerRole: '', residency: '', isInState: false,
-    incomeBracket: null, goals: [], alumniData: {}, financialAidOffers: {},
+    incomeBracket: null, goals: [], alumniData: {}, financialAidOffers: {}, studentRatings: {},
+    workHours: '', interests: '', greekLife: '', weatherPref: '',
     currentStep: 0, direction: 1, comparisonResult: null,
   }),
 }))

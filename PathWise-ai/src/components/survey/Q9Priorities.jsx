@@ -24,9 +24,11 @@ const WEATHER_OPTIONS = [
   { label: 'No preference',     value: 'any',       Icon: Wind },
 ]
 
-function SectionLabel({ children }) {
+function SectionLabel({ number, children }) {
   return (
-    <p className="text-sm font-semibold text-[#37352f] mb-2 mt-8 first:mt-0">{children}</p>
+    <p className="text-sm font-semibold text-[#37352f] mb-2 mt-12 first:mt-0">
+      <span className="text-[#787774] mr-1.5">{number}.</span>{children}
+    </p>
   )
 }
 
@@ -46,8 +48,8 @@ export default function Q8Priorities() {
       onNext={goNext}
       canProgress={!!workHours}
     >
-      {/* a) Work hours */}
-      <SectionLabel>How many hours are you willing to work per week?</SectionLabel>
+      {/* 1) Work hours */}
+      <SectionLabel number={1}>How many hours are you willing to work per week?</SectionLabel>
       <div className="flex flex-col gap-2">
         {WORK_HOURS.map(({ label, value }) => {
           const selected = workHours === value
@@ -69,8 +71,8 @@ export default function Q8Priorities() {
         })}
       </div>
 
-      {/* b) Interests */}
-      <SectionLabel>What are your interests?</SectionLabel>
+      {/* 2) Interests */}
+      <SectionLabel number={2}>What are your interests?</SectionLabel>
       <textarea
         value={interests}
         onChange={(e) => setInterests(e.target.value)}
@@ -79,8 +81,8 @@ export default function Q8Priorities() {
         className="w-full px-4 py-3 rounded-lg border border-[#e9e9e7] bg-white text-sm text-[#37352f] placeholder-[#c4c4c0] resize-none focus:outline-none focus:border-[#37352f] transition-colors duration-150"
       />
 
-      {/* c) Greek life */}
-      <SectionLabel>Is Greek life important to you?</SectionLabel>
+      {/* 3) Greek life */}
+      <SectionLabel number={3}>Is Greek life important to you?</SectionLabel>
       <div className="flex flex-col gap-2">
         {GREEK_LIFE_OPTIONS.map(({ label, value }) => {
           const selected = greekLife === value
@@ -102,8 +104,8 @@ export default function Q8Priorities() {
         })}
       </div>
 
-      {/* d) Weather */}
-      <SectionLabel>What weather do you enjoy?</SectionLabel>
+      {/* 4) Weather */}
+      <SectionLabel number={4}>What weather do you enjoy?</SectionLabel>
       <div className="grid grid-cols-2 gap-2">
         {WEATHER_OPTIONS.map(({ label, value, Icon }) => {
           const selected = weatherPref === value

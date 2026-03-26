@@ -7,6 +7,7 @@ import { PRIMARY_GOALS } from '../../lib/economicData'
 import { fetchLatestQuestionData } from '../../lib/questionDataService'
 import WealthChart from './WealthChart'
 import SchoolCard from './SchoolCard'
+import DownloadShareMenu from './DownloadShareMenu'
 
 const GOAL_LABEL = Object.fromEntries(PRIMARY_GOALS.map(({ value, label }) => [value, label]))
 
@@ -52,6 +53,20 @@ export default function ResultsPage() {
 
   return (
     <div className="relative min-h-screen bg-[#f5f5f7]">
+      {/* Print stylesheet — only applied when window.print() is called */}
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          body { background: white !important; }
+          .glass, .glass-dark {
+            background: white !important;
+            border: 1px solid #e5e5ea !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+          }
+          @page { margin: 1.5cm; }
+        }
+      `}</style>
       {/* Background orbs */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-blue-100/40 blur-3xl" />
@@ -133,8 +148,17 @@ export default function ResultsPage() {
             </p>
           </motion.div>
 
+          {/* Download & Share */}
+          <motion.div variants={stagger.item} className="mt-8 flex flex-col items-center gap-4 no-print">
+            <DownloadShareMenu
+              comparisonResult={comparisonResult}
+              major={major}
+              goals={goals}
+            />
+          </motion.div>
+
           {/* Reset */}
-          <motion.div variants={stagger.item} className="mt-8 text-center">
+          <motion.div variants={stagger.item} className="mt-4 text-center no-print">
             <button
               onClick={reset}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-black/10 text-sm text-[#6e6e73] hover:text-[#1d1d1f] hover:border-black/20 transition-all"

@@ -173,7 +173,8 @@ export function calculateNPV(schoolName, major, householdIncome, isInState, actu
     annualTuition: estimateTuition(schoolName, isInState),
     estimatedAid: estimatedAidFallback,
     actualAid,
-    aidSource: actualAid !== null ? 'actual' : 'estimated',
+    // 'actual' only when the student entered a specific positive amount
+    aidSource: (actualAid !== null && actualAid > 0) ? 'actual' : 'estimated',
   }
 }
 
@@ -221,7 +222,9 @@ export function compareOffers(schools, major, householdIncome, isInState, goals 
   const coeffs = MAJOR_COEFFICIENTS[major] || MAJOR_COEFFICIENTS['Undecided']
 
   const results = schools.slice(0, 4).map((school) => {
-    const actualAid = financialAidOffers[school] ?? null
+    // financialAidOffers always contains a number (0 = skipped/blank, >0 = student-entered).
+    // Pass it directly so buildTrajectory uses 0 cost-of-aid when the student didn't specify.
+    const actualAid = financialAidOffers[school] ?? 0
     const { npv, trajectory, annualTuition, estimatedAid, aidSource } = calculateNPV(
       school, major, householdIncome, isInState, actualAid
     )
@@ -232,8 +235,9 @@ export function compareOffers(schools, major, householdIncome, isInState, goals 
     const entryWage = careerTrajectory[0]?.wage || 0
     const year10Wage = careerTrajectory[9]?.wage || 0
 
-    // The aid amount actually used in the calculation
-    const aidUsed = actualAid !== null ? actualAid : estimatedAid
+    // The aid amount actually used in the calculation.
+    // Always the student's input: a positive entered amount or 0 (skip/blank).
+    const aidUsed = actualAid
 
     // Signal vs Skill decomposition
     const skillROI = npv * (1 - coeffs.signal_weight * (1 - 1 / prestige.multiplier))

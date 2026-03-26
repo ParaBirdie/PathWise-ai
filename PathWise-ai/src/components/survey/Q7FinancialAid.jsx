@@ -44,15 +44,17 @@ export default function Q7FinancialAid() {
     setLoading(true)
     setError(null)
 
-    // Build the parsed offers map: { school: number | null }
+    // Build the parsed offers map: { school: number }
+    // 0 means no aid (skipped, blank, or explicitly entered 0).
+    // A positive integer means the student entered a specific aid amount.
     const parsedOffers = {}
     schools.forEach((s) => {
       if (skipped[s]) {
-        parsedOffers[s] = null
+        parsedOffers[s] = 0
       } else {
         const digits = inputs[s]
         const num = digits ? parseInt(digits, 10) : NaN
-        parsedOffers[s] = isNaN(num) ? null : num
+        parsedOffers[s] = isNaN(num) ? 0 : num
       }
     })
 
@@ -123,7 +125,7 @@ export default function Q7FinancialAid() {
   return (
     <QuestionCard
       question="How much financial aid did each school offer?"
-      subtitle="Enter the annual grant or scholarship from each offer letter. Leave blank or click Skip to use our estimate instead."
+      subtitle="Enter the annual grant or scholarship from each offer letter. Leave blank or click Skip to calculate with $0 aid."
       onNext={handleFinish}
       canProgress={true}
       nextLabel={loading ? 'Calculating…' : 'See My Results →'}
@@ -202,7 +204,7 @@ export default function Q7FinancialAid() {
 
       <div className="mt-6 p-4 rounded-lg bg-[#f7f7f5] border border-[#e9e9e7]">
         <p className="text-xs text-[#787774] leading-relaxed">
-          <strong className="text-[#37352f]">Where to find this:</strong> Check your official admissions offer letter or the financial aid portal for each school. Enter the annual grant/scholarship amount (not loans). Click <strong className="text-[#37352f]">Skip</strong> for any school where you don't have the figure — we'll estimate it from published FAFSA data.
+          <strong className="text-[#37352f]">Where to find this:</strong> Check your official admissions offer letter or the financial aid portal for each school. Enter the annual grant/scholarship amount (not loans). Click <strong className="text-[#37352f]">Skip</strong> for any school where you don't have the figure — aid will be calculated as $0.
         </p>
       </div>
     </QuestionCard>

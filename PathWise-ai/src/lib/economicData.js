@@ -71,13 +71,13 @@ export const MAJOR_COEFFICIENTS = {
  */
 export const UNIVERSITY_PRESTIGE = {
   // Tier 1: Elite (MIT, Stanford, Harvard, etc.)
-  elite: { multiplier: 1.35, aid_base: 55000, aid_income_sensitivity: 0.85 },
+  elite: { multiplier: 1.35 },
   // Tier 2: Strong Research (Top 50 national)
-  research: { multiplier: 1.18, aid_base: 30000, aid_income_sensitivity: 0.65 },
+  research: { multiplier: 1.18 },
   // Tier 3: Regional / State Flagship
-  flagship: { multiplier: 1.08, aid_base: 15000, aid_income_sensitivity: 0.50 },
+  flagship: { multiplier: 1.08 },
   // Tier 4: Community / Local
-  local: { multiplier: 1.00, aid_base: 6000, aid_income_sensitivity: 0.40 },
+  local: { multiplier: 1.00 },
 }
 
 export const SCHOOL_TIER_MAP = {

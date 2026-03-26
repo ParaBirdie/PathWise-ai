@@ -58,9 +58,9 @@ export default function SchoolCard({ result, rank, color }) {
           {[
             { label: 'Annual Tuition', value: formatCurrency(result.annualTuition, true), highlight: false },
             {
-              label: result.aidSource === 'actual' ? 'Your Aid / yr ✓' : 'Est. Aid / yr',
-              value: formatCurrency(result.aidUsed ?? result.estimatedAid, true),
-              highlight: result.aidSource === 'actual',
+              label: result.aidUsed > 0 ? 'Your Aid / yr ✓' : 'Aid / yr',
+              value: formatCurrency(result.aidUsed, true),
+              highlight: result.aidUsed > 0,
             },
             { label: 'Entry Level Pay', value: formatCurrency(result.entryWage, true), highlight: false },
             { label: 'Year 10 Pay', value: formatCurrency(result.year10Wage, true), highlight: false },

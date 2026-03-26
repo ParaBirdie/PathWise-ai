@@ -14,7 +14,7 @@
  *   β1–4 = quartic experience-earnings coefficients
  *
  * NPV Components:
- *   Cost        = (annual_tuition × 4) − aid
+ *   Cost        = annual_tuition × 4  (aid = only what student entered; $0 if nothing entered)
  *   Opp. Cost   = 4 × $35,000 (foregone wages during college)
  *   Total Cost  = Cost + Opp. Cost (discounted)
  *   Benefit     = Sum of discounted annual earnings over 40-year horizon
@@ -61,21 +61,6 @@ export function estimateTuition(schoolName, isInState) {
 }
 
 /**
- * Estimate financial aid based on household income and university tier.
- */
-export function estimateAid(householdIncome, schoolName) {
-  const tier = _tierMap[schoolName] || 'flagship'
-  const tierData = UNIVERSITY_PRESTIGE[tier] || UNIVERSITY_PRESTIGE.flagship
-  const aidBase = tierData.aid_base
-  const sensitivity = tierData.aid_income_sensitivity
-
-  // Aid decreases as income increases (simplified FAFSA curve)
-  const incomeRatio = Math.min(householdIncome / 60000, 3.0)
-  const aid = aidBase * Math.max(0, 1 - sensitivity * (incomeRatio - 0.5) * 0.4)
-  return Math.round(Math.max(0, aid))
-}
-
-/**
  * Compute the quartic Mincerian log-wage at experience year X.
  */
 function mincerLogWage(coeffs, experienceYear) {
@@ -99,7 +84,7 @@ function mincerLogWage(coeffs, experienceYear) {
  * @param {number} householdIncome
  * @param {boolean} isInState
  * @param {number} [startAge=18]
- * @param {number|null} [actualAid=null] - Actual aid from offer letter; if null, estimated from FAFSA curve
+ * @param {number|null} [actualAid=null] - Aid from offer letter; null or missing = $0 (no estimation)
  * Returns an array of { year, age, wage, cumulativeWealth } objects.
  */
 export function buildTrajectory(schoolName, major, householdIncome, isInState, startAge = 18, actualAid = null) {
@@ -108,9 +93,7 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
   const prestige = UNIVERSITY_PRESTIGE[tier] || UNIVERSITY_PRESTIGE.flagship
 
   const annualTuition = estimateTuition(schoolName, isInState)
-  const annualAid = (actualAid !== null && actualAid !== undefined)
-    ? actualAid
-    : estimateAid(householdIncome, schoolName)
+  const annualAid = (actualAid !== null && actualAid !== undefined) ? actualAid : 0
   const netAnnualCost = Math.max(0, annualTuition - annualAid)
 
   const trajectory = []
@@ -165,22 +148,19 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
  * @param {string} major
  * @param {number} householdIncome
  * @param {boolean} isInState
- * @param {number|null} [actualAid=null] - Actual aid from offer letter; if null, uses FAFSA estimate
+ * @param {number|null} [actualAid=null] - Aid from offer letter; null or missing = $0 (no estimation)
  */
 export function calculateNPV(schoolName, major, householdIncome, isInState, actualAid = null) {
-  const trajectory = buildTrajectory(schoolName, major, householdIncome, isInState, 18, actualAid)
+  const aidUsed = (actualAid !== null && actualAid !== undefined) ? actualAid : 0
+  const trajectory = buildTrajectory(schoolName, major, householdIncome, isInState, 18, aidUsed)
   const finalEntry = trajectory[trajectory.length - 1]
-  // estimateAid is already called inside buildTrajectory when actualAid is null;
-  // compute it once here rather than calling it a second time.
-  const estimatedAid = estimateAid(householdIncome, schoolName)
   return {
     npv: finalEntry.cumulativeWealth,
     trajectory,
     annualTuition: estimateTuition(schoolName, isInState),
-    estimatedAid,
-    actualAid,
-    // 'actual' only when the student entered a specific positive amount
-    aidSource: (actualAid !== null && actualAid > 0) ? 'actual' : 'estimated',
+    aidUsed,
+    // 'entered' when the student provided a positive amount; 'none' otherwise
+    aidSource: aidUsed > 0 ? 'entered' : 'none',
   }
 }
 
@@ -231,7 +211,7 @@ export function compareOffers(schools, major, householdIncome, isInState, goals 
     // financialAidOffers always contains a number (0 = skipped/blank, >0 = student-entered).
     // Pass it directly so buildTrajectory uses 0 cost-of-aid when the student didn't specify.
     const actualAid = financialAidOffers[school] ?? 0
-    const { npv, trajectory, annualTuition, estimatedAid, aidSource } = calculateNPV(
+    const { npv, trajectory, annualTuition, aidUsed: computedAid, aidSource } = calculateNPV(
       school, major, householdIncome, isInState, actualAid
     )
     const tier = _tierMap[school] || 'flagship'
@@ -241,9 +221,8 @@ export function compareOffers(schools, major, householdIncome, isInState, goals 
     const entryWage = careerTrajectory[0]?.wage || 0
     const year10Wage = careerTrajectory[9]?.wage || 0
 
-    // The aid amount actually used in the calculation.
-    // Always the student's input: a positive entered amount or 0 (skip/blank).
-    const aidUsed = actualAid
+    // aidUsed = student-entered amount, or 0 if nothing was entered (no estimation)
+    const aidUsed = computedAid
 
     // Signal vs Skill decomposition
     const skillROI = npv * (1 - coeffs.signal_weight * (1 - 1 / prestige.multiplier))
@@ -258,7 +237,6 @@ export function compareOffers(schools, major, householdIncome, isInState, goals 
       npv: Math.round(npv),
       trajectory,
       annualTuition,
-      estimatedAid,
       aidUsed,
       aidSource,
       netCostTotal: Math.round((annualTuition - aidUsed) * 4),

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { ChevronDown, ChevronUp, BadgeCheck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatCurrency } from '../../lib/npvEngine'
+import { SCHOOL_COLORS } from '../../lib/economicData'
 
 const TIER_LABELS = {
   elite: { label: 'Elite', color: 'text-violet-600 bg-violet-50' },
@@ -9,8 +10,6 @@ const TIER_LABELS = {
   flagship: { label: 'State Flagship', color: 'text-emerald-600 bg-emerald-50' },
   local: { label: 'Local / Community', color: 'text-amber-600 bg-amber-50' },
 }
-
-const SCHOOL_COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b']
 
 export default function SchoolCard({ result, rank, color }) {
   const [showBreakdown, setShowBreakdown] = useState(false)

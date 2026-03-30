@@ -168,8 +168,8 @@ export const SCHOOL_TUITION_MAP = {
   'Tufts University': 65222, 'Wake Forest University': 62930, 'Boston College': 64208,
 
   // ── Research Private — tuition_private from schema.sql ───────────────────────
-  // Public research schools are intentionally excluded — their in/out-of-state
-  // tuition is handled by the isInState tier-based fallback in estimateTuition()
+  // Public research schools are excluded here — their in/out-of-state tuition
+  // is covered by SCHOOL_IN_STATE_TUITION_MAP / SCHOOL_OUT_STATE_TUITION_MAP below.
   'Carnegie Mellon': 58924, 'Northeastern': 59154, 'NYU': 58168,
   'Boston University': 61050, 'George Washington University': 62560,
   'American University': 54506, 'Fordham University': 58194,
@@ -189,7 +189,148 @@ export const SCHOOL_TUITION_MAP = {
   'Sacred Heart University': 47490, 'Marist College': 43740,
   'Bryant University': 51992, 'Roger Williams University': 39748,
   'Hofstra University': 52480, 'Pace University': 48100,
-  // CUNY Baruch College is public — uses tier-based in/out-of-state fallback
+  // CUNY Baruch College is public — covered by SCHOOL_IN_STATE_TUITION_MAP below
+}
+
+/**
+ * In-state tuition for public schools.
+ * Values match tuition_in_state in schema.sql → university_financials.
+ */
+export const SCHOOL_IN_STATE_TUITION_MAP = {
+  // ── Research Public ──────────────────────────────────────────────────────────
+  'UC Berkeley': 14312, 'UCLA': 13249, 'Georgia Tech': 12424,
+  'University of Michigan': 16736, 'University of Virginia': 18886,
+  'UNC Chapel Hill': 8998, 'University of Wisconsin–Madison': 11205,
+  'University of Illinois Urbana-Champaign': 16040, 'Ohio State University': 11936,
+  'Penn State University': 18985, 'Purdue University': 10002,
+  'University of Washington': 12643, 'Arizona State University': 11038,
+  'Michigan State University': 15188, 'UC San Diego': 14989, 'UC Davis': 14992,
+  'UC Santa Barbara': 14901, 'UC Irvine': 13727, 'UC Santa Cruz': 14401,
+  'UT Austin': 11020, 'University of Florida': 6381, 'UMass Amherst': 16091,
+  'Rutgers University': 17239, 'Virginia Tech': 13891, 'University of Maryland': 11505,
+  'University of Colorado Boulder': 12904, 'Indiana University Bloomington': 10533,
+  'University of Minnesota': 16155, 'Clemson University': 15316,
+  'University of Connecticut': 16384,
+  // ── Flagship State ───────────────────────────────────────────────────────────
+  'Florida State University': 5656, 'University of Alabama': 11100,
+  'Auburn University': 11180, 'Iowa State University': 10095,
+  'University of Iowa': 9860, 'University of Kansas': 10092,
+  'Kansas State University': 9874, 'University of Missouri': 12140,
+  'University of Tennessee': 13244, 'University of Kentucky': 13440,
+  'University of Arkansas': 9290, 'University of Oklahoma': 9957,
+  'Oklahoma State University': 9046, 'Louisiana State University': 10082,
+  'University of South Carolina': 12688, 'University of Vermont': 19032,
+  'University of Oregon': 13698, 'University of Arizona': 12457,
+  'Miami University Ohio': 16368, 'Colorado State University': 12328,
+  'University of Utah': 9284, 'Utah State University': 7980,
+  'University of Nevada Las Vegas': 8312, 'University of New Mexico': 8530,
+  'West Virginia University': 8976, 'University of Mississippi': 8780,
+  'Mississippi State University': 8764, 'University of Nebraska–Lincoln': 9890,
+  'University of Wyoming': 5880,
+  'SUNY Buffalo': 9688, 'SUNY Stony Brook': 9680, 'SUNY Binghamton': 9617,
+  'Cal Poly San Luis Obispo': 9727, 'San Diego State University': 7824,
+  'San Jose State University': 7936, 'CUNY Baruch College': 7600,
+}
+
+/**
+ * Out-of-state tuition for public schools.
+ * Values match tuition_out_state in schema.sql → university_financials.
+ */
+export const SCHOOL_OUT_STATE_TUITION_MAP = {
+  // ── Research Public ──────────────────────────────────────────────────────────
+  'UC Berkeley': 44066, 'UCLA': 43022, 'Georgia Tech': 33794,
+  'University of Michigan': 53232, 'University of Virginia': 54094,
+  'UNC Chapel Hill': 37366, 'University of Wisconsin–Madison': 39378,
+  'University of Illinois Urbana-Champaign': 34312, 'Ohio State University': 35019,
+  'Penn State University': 37716, 'Purdue University': 29794,
+  'University of Washington': 41997, 'Arizona State University': 28996,
+  'Michigan State University': 42516, 'UC San Diego': 44989, 'UC Davis': 44966,
+  'UC Santa Barbara': 44875, 'UC Irvine': 43701, 'UC Santa Cruz': 44375,
+  'UT Austin': 40022, 'University of Florida': 28658, 'UMass Amherst': 37591,
+  'Rutgers University': 35509, 'Virginia Tech': 33708, 'University of Maryland': 40307,
+  'University of Colorado Boulder': 38994, 'Indiana University Bloomington': 37970,
+  'University of Minnesota': 34132, 'Clemson University': 38550,
+  'University of Connecticut': 40684,
+  // ── Flagship State ───────────────────────────────────────────────────────────
+  'Florida State University': 21683, 'University of Alabama': 29400,
+  'Auburn University': 31008, 'Iowa State University': 27099,
+  'University of Iowa': 32372, 'University of Kansas': 27878,
+  'Kansas State University': 27124, 'University of Missouri': 29812,
+  'University of Tennessee': 32162, 'University of Kentucky': 31000,
+  'University of Arkansas': 24354, 'University of Oklahoma': 28126,
+  'Oklahoma State University': 25346, 'Louisiana State University': 28522,
+  'University of South Carolina': 34726, 'University of Vermont': 47112,
+  'University of Oregon': 38226, 'University of Arizona': 37890,
+  'Miami University Ohio': 36448, 'Colorado State University': 33778,
+  'University of Utah': 31422, 'Utah State University': 25246,
+  'University of Nevada Las Vegas': 23862, 'University of New Mexico': 25994,
+  'West Virginia University': 24552, 'University of Mississippi': 24708,
+  'Mississippi State University': 23734, 'University of Nebraska–Lincoln': 25730,
+  'University of Wyoming': 20790,
+  'SUNY Buffalo': 27098, 'SUNY Stony Brook': 27070, 'SUNY Binghamton': 27007,
+  'Cal Poly San Luis Obispo': 21887, 'San Diego State University': 19984,
+  'San Jose State University': 20096, 'CUNY Baruch College': 15480,
+}
+
+/**
+ * Maps public school name → 2-letter US state abbreviation.
+ * Used to derive per-school isInState by comparing against the student's residency state.
+ */
+export const SCHOOL_LOCATION_STATE_MAP = {
+  // ── Research Public ──────────────────────────────────────────────────────────
+  'UC Berkeley': 'CA', 'UCLA': 'CA', 'UC San Diego': 'CA', 'UC Davis': 'CA',
+  'UC Santa Barbara': 'CA', 'UC Irvine': 'CA', 'UC Santa Cruz': 'CA',
+  'Georgia Tech': 'GA', 'University of Michigan': 'MI',
+  'University of Virginia': 'VA', 'UNC Chapel Hill': 'NC',
+  'University of Wisconsin–Madison': 'WI',
+  'University of Illinois Urbana-Champaign': 'IL', 'Ohio State University': 'OH',
+  'Penn State University': 'PA', 'Purdue University': 'IN',
+  'University of Washington': 'WA', 'Arizona State University': 'AZ',
+  'Michigan State University': 'MI', 'UT Austin': 'TX',
+  'University of Florida': 'FL', 'UMass Amherst': 'MA',
+  'Rutgers University': 'NJ', 'Virginia Tech': 'VA',
+  'University of Maryland': 'MD', 'University of Colorado Boulder': 'CO',
+  'Indiana University Bloomington': 'IN', 'University of Minnesota': 'MN',
+  'Clemson University': 'SC', 'University of Connecticut': 'CT',
+  // ── Flagship State ───────────────────────────────────────────────────────────
+  'Florida State University': 'FL', 'University of Alabama': 'AL',
+  'Auburn University': 'AL', 'Iowa State University': 'IA',
+  'University of Iowa': 'IA', 'University of Kansas': 'KS',
+  'Kansas State University': 'KS', 'University of Missouri': 'MO',
+  'University of Tennessee': 'TN', 'University of Kentucky': 'KY',
+  'University of Arkansas': 'AR', 'University of Oklahoma': 'OK',
+  'Oklahoma State University': 'OK', 'Louisiana State University': 'LA',
+  'University of South Carolina': 'SC', 'University of Vermont': 'VT',
+  'University of Oregon': 'OR', 'University of Arizona': 'AZ',
+  'Miami University Ohio': 'OH', 'Colorado State University': 'CO',
+  'University of Utah': 'UT', 'Utah State University': 'UT',
+  'University of Nevada Las Vegas': 'NV', 'University of New Mexico': 'NM',
+  'West Virginia University': 'WV', 'University of Mississippi': 'MS',
+  'Mississippi State University': 'MS', 'University of Nebraska–Lincoln': 'NE',
+  'University of Wyoming': 'WY',
+  'SUNY Buffalo': 'NY', 'SUNY Stony Brook': 'NY', 'SUNY Binghamton': 'NY',
+  'Cal Poly San Luis Obispo': 'CA', 'San Diego State University': 'CA',
+  'San Jose State University': 'CA', 'CUNY Baruch College': 'NY',
+}
+
+/**
+ * Maps full US state/territory name (as stored in surveyStore.residency) to
+ * the 2-letter abbreviation used in SCHOOL_LOCATION_STATE_MAP.
+ */
+export const US_STATE_ABBR = {
+  'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR',
+  'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE',
+  'Florida': 'FL', 'Georgia': 'GA', 'Hawaii': 'HI', 'Idaho': 'ID',
+  'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA', 'Kansas': 'KS',
+  'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+  'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS',
+  'Missouri': 'MO', 'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV',
+  'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY',
+  'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH', 'Oklahoma': 'OK',
+  'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+  'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT',
+  'Vermont': 'VT', 'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV',
+  'Wisconsin': 'WI', 'Wyoming': 'WY', 'Washington D.C.': 'DC',
 }
 
 export const INCOME_BRACKETS = [

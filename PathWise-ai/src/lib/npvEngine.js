@@ -21,22 +21,48 @@
  *   NPV         = Benefit − Total Cost
  */
 
-import { MAJOR_COEFFICIENTS, UNIVERSITY_PRESTIGE, SCHOOL_TIER_MAP, SCHOOL_TUITION_MAP } from './economicData.js'
+import {
+  MAJOR_COEFFICIENTS, UNIVERSITY_PRESTIGE,
+  SCHOOL_TIER_MAP, SCHOOL_TUITION_MAP,
+  SCHOOL_IN_STATE_TUITION_MAP, SCHOOL_OUT_STATE_TUITION_MAP,
+  SCHOOL_LOCATION_STATE_MAP, US_STATE_ABBR,
+} from './economicData.js'
 
 // Runtime-overridable maps — start with the static seed data from economicData.js.
-// Call setUniversityMaps() (e.g. from Q6Alumni after fetching Supabase) to inject
-// live DB values so newly added schools are automatically correct without a code deploy.
-let _tierMap = SCHOOL_TIER_MAP
-let _tuitionMap = SCHOOL_TUITION_MAP
+// Call setUniversityMaps() after fetching Supabase to inject live DB values so newly
+// added schools are automatically correct without a code deploy.
+let _tierMap          = SCHOOL_TIER_MAP
+let _tuitionMap       = SCHOOL_TUITION_MAP           // private tuition
+let _inStateTuitionMap  = SCHOOL_IN_STATE_TUITION_MAP
+let _outStateTuitionMap = SCHOOL_OUT_STATE_TUITION_MAP
+let _locationStateMap   = SCHOOL_LOCATION_STATE_MAP  // school → 2-letter state abbr
 
 /**
- * Override the tier and tuition maps with live data from the database.
- * DB values are merged on top of the static fallbacks, so the static data
+ * Override all lookup maps with live data from the database.
+ * DB values are merged on top of the static fallbacks so the static data
  * still covers any school the DB query might miss.
  */
-export function setUniversityMaps(tierMap, tuitionMap) {
-  _tierMap = { ...SCHOOL_TIER_MAP, ...tierMap }
-  _tuitionMap = { ...SCHOOL_TUITION_MAP, ...tuitionMap }
+export function setUniversityMaps(tierMap, tuitionMap, inStateTuitionMap = {}, outStateTuitionMap = {}, locationStateMap = {}) {
+  _tierMap            = { ...SCHOOL_TIER_MAP,            ...tierMap }
+  _tuitionMap         = { ...SCHOOL_TUITION_MAP,         ...tuitionMap }
+  _inStateTuitionMap  = { ...SCHOOL_IN_STATE_TUITION_MAP,  ...inStateTuitionMap }
+  _outStateTuitionMap = { ...SCHOOL_OUT_STATE_TUITION_MAP, ...outStateTuitionMap }
+  _locationStateMap   = { ...SCHOOL_LOCATION_STATE_MAP,    ...locationStateMap }
+}
+
+/**
+ * Determine whether a school is in-state for a given residency.
+ * Private schools always return false (they have no in/out-of-state distinction).
+ * @param {string} schoolName
+ * @param {string} residencyState - Full US state name (e.g. "California") or country
+ * @returns {boolean}
+ */
+export function resolveIsInState(schoolName, residencyState) {
+  const schoolStateAbbr = _locationStateMap[schoolName]
+  if (!schoolStateAbbr) return false  // private school or unknown — no in-state rate
+  const residencyAbbr = US_STATE_ABBR[residencyState]
+  if (!residencyAbbr) return false    // international student
+  return schoolStateAbbr === residencyAbbr
 }
 
 const DISCOUNT_RATE = 0.05
@@ -46,17 +72,30 @@ const FOREGONE_WAGE = 35000
 const DEFAULT_TUITION = { inState: 12000, outOfState: 36000, private: 58000 }
 
 /**
- * Estimate annual tuition for a school name.
- * Production would query the Supabase `career_trajectories` table.
+ * Look up annual tuition for a school.
+ * Priority order:
+ *   1. Private tuition map (exact DB value for private schools)
+ *   2. Public in-state / out-of-state map (exact DB values for public schools)
+ *   3. Community college flat rate
+ *   4. Tier-based hardcoded fallback (last resort when school is not in any map)
  */
 export function estimateTuition(schoolName, isInState) {
   const name = schoolName?.toLowerCase() || ''
-  const tier = _tierMap[schoolName] || 'flagship'
 
-  if (name.includes('community') || name.includes('cc ')) return 5500
+  // 1. Private school — tuition is the same regardless of residency
   if (_tuitionMap[schoolName]) return _tuitionMap[schoolName]
+
+  // 2. Public school — use exact in/out-of-state values from DB
+  if (isInState && _inStateTuitionMap[schoolName])  return _inStateTuitionMap[schoolName]
+  if (!isInState && _outStateTuitionMap[schoolName]) return _outStateTuitionMap[schoolName]
+
+  // 3. Community college flat rate
+  if (name.includes('community') || name.includes('cc ')) return 5500
+
+  // 4. Tier-based fallback (school not in any map — should not happen for seeded schools)
+  const tier = _tierMap[schoolName] || 'flagship'
   if (tier === 'elite') return DEFAULT_TUITION.private
-  if (tier === 'research') return isInState ? 18000 : DEFAULT_TUITION.outOfState
+  if (tier === 'research') return isInState ? DEFAULT_TUITION.inState : DEFAULT_TUITION.outOfState
   return isInState ? DEFAULT_TUITION.inState : DEFAULT_TUITION.outOfState
 }
 
@@ -192,11 +231,13 @@ function goalRawScore(result, goalValue) {
  * @param {string[]} schools
  * @param {string} major
  * @param {number} householdIncome
- * @param {boolean} isInState
+ * @param {string} residencyState - Full US state name (e.g. "California") or country.
+ *   Per-school isInState is derived automatically by comparing the student's state
+ *   against each school's location_state in the DB.
  * @param {string[]} goals - Array of PRIMARY_GOALS values; falls back to ['maximize_roi']
  * @param {Object} [financialAidOffers={}] - Map of { [schoolName]: number | null } from offer letters
  */
-export function compareOffers(schools, major, householdIncome, isInState, goals = ['maximize_roi'], financialAidOffers = {}) {
+export function compareOffers(schools, major, householdIncome, residencyState, goals = ['maximize_roi'], financialAidOffers = {}) {
   if (!Array.isArray(schools) || schools.length === 0) {
     throw new Error('compareOffers: schools must be a non-empty array')
   }
@@ -208,8 +249,10 @@ export function compareOffers(schools, major, householdIncome, isInState, goals 
   const coeffs = MAJOR_COEFFICIENTS[major] || MAJOR_COEFFICIENTS['Undecided']
 
   const results = schools.slice(0, 4).map((school) => {
+    // Derive per-school in-state status from the student's residency state
+    const isInState = resolveIsInState(school, residencyState)
+
     // financialAidOffers always contains a number (0 = skipped/blank, >0 = student-entered).
-    // Pass it directly so buildTrajectory uses 0 cost-of-aid when the student didn't specify.
     const actualAid = financialAidOffers[school] ?? 0
     const { npv, trajectory, annualTuition, aidUsed: computedAid, aidSource } = calculateNPV(
       school, major, householdIncome, isInState, actualAid
@@ -234,6 +277,7 @@ export function compareOffers(schools, major, householdIncome, isInState, goals 
     return {
       school,
       tier,
+      isInState,
       npv: Math.round(npv),
       trajectory,
       annualTuition,

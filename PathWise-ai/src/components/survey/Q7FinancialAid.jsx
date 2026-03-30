@@ -8,7 +8,7 @@ import QuestionCard from './QuestionCard'
 
 export default function Q7FinancialAid() {
   const {
-    schools, major, incomeBracket, isInState, residency, goals,
+    schools, major, incomeBracket, residency, goals,
     setFinancialAidOffers, setComparisonResult, goNext,
   } = useSurveyStore()
 
@@ -61,14 +61,20 @@ export default function Q7FinancialAid() {
     try {
       // Load live university data from Supabase (falls back to static maps on error)
       const maps = await fetchUniversityMaps()
-      if (maps) setUniversityMaps(maps.tierMap, maps.tuitionMap)
+      if (maps) setUniversityMaps(
+        maps.tierMap,
+        maps.tuitionMap,
+        maps.inStateTuitionMap,
+        maps.outStateTuitionMap,
+        maps.locationStateMap,
+      )
 
-      // Run NPV comparison with actual aid amounts
+      // Run NPV comparison — per-school isInState is resolved inside compareOffers
       const result = compareOffers(
         schools,
         major,
         incomeBracket?.value || 80000,
-        isInState,
+        residency,
         goals,
         parsedOffers
       )

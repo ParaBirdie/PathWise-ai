@@ -116,9 +116,12 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
   const trajectory = []
   let cumulativeWealth = 0
 
+  // Precompute the per-year discount factor to avoid repeated exponentiation
+  const ANNUAL_DISCOUNT = 1 / (1 + DISCOUNT_RATE)
+  let discountFactor = ANNUAL_DISCOUNT
+
   // Phase 1: College years (negative cash flow)
   for (let yr = 1; yr <= SCHOOLING_YEARS; yr++) {
-    const discountFactor = 1 / (1 + DISCOUNT_RATE) ** yr
     const yearCost = (netAnnualCost + FOREGONE_WAGE) * discountFactor
     cumulativeWealth -= yearCost
     trajectory.push({
@@ -129,12 +132,12 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
       cost: Math.round(yearCost),
       cumulativeWealth: Math.round(cumulativeWealth),
     })
+    discountFactor *= ANNUAL_DISCOUNT
   }
 
-  // Phase 2: Career years
+  // Phase 2: Career years (discountFactor is already at ANNUAL_DISCOUNT^(SCHOOLING_YEARS+1))
   for (let X = 1; X <= CAREER_YEARS; X++) {
     const calendarYear = SCHOOLING_YEARS + X
-    const discountFactor = 1 / (1 + DISCOUNT_RATE) ** calendarYear
 
     const logWage = mincerLogWage(coeffs, X)
     const rawWage = Math.exp(logWage)
@@ -150,6 +153,7 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
       cost: 0,
       cumulativeWealth: Math.round(cumulativeWealth),
     })
+    discountFactor *= ANNUAL_DISCOUNT
   }
 
   return trajectory
@@ -166,12 +170,14 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
 export function calculateNPV(schoolName, major, householdIncome, isInState, actualAid = null) {
   const trajectory = buildTrajectory(schoolName, major, householdIncome, isInState, 18, actualAid)
   const finalEntry = trajectory[trajectory.length - 1]
-  const estimatedAidFallback = estimateAid(householdIncome, schoolName)
+  // estimateAid is already called inside buildTrajectory when actualAid is null;
+  // compute it once here rather than calling it a second time.
+  const estimatedAid = estimateAid(householdIncome, schoolName)
   return {
     npv: finalEntry.cumulativeWealth,
     trajectory,
     annualTuition: estimateTuition(schoolName, isInState),
-    estimatedAid: estimatedAidFallback,
+    estimatedAid,
     actualAid,
     // 'actual' only when the student entered a specific positive amount
     aidSource: (actualAid !== null && actualAid > 0) ? 'actual' : 'estimated',

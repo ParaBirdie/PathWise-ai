@@ -123,7 +123,7 @@ export async function fetchLatestQuestionData() {
 
     const { data, error: dbErr } = await supabase
       .from('question_data')
-      .select('*')
+      .select('result_snapshot')
       .eq('session_token', user.id)
       .order('created_at', { ascending: false })
       .limit(1)

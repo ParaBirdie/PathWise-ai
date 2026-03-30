@@ -202,6 +202,8 @@ export const INCOME_BRACKETS = [
 
 export const FIELDS_OF_STUDY = Object.keys(MAJOR_COEFFICIENTS)
 
+export const SCHOOL_COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b']
+
 export const PRIMARY_GOALS = [
   { value: 'minimize_cost', label: 'Minimize Total Cost', desc: 'Pay as little as possible — in-state tuition, net price, and scholarship access' },
   { value: 'maximize_roi', label: 'Maximize ROI', desc: 'Find the best lifetime financial return on my investment' },

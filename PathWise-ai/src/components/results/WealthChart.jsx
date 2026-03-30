@@ -4,8 +4,7 @@ import {
   ResponsiveContainer, ReferenceLine, Legend,
 } from 'recharts'
 import { formatCurrency } from '../../lib/npvEngine'
-
-const SCHOOL_COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b']
+import { SCHOOL_COLORS } from '../../lib/economicData'
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null

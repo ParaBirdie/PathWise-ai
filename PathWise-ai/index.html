@@ -7,18 +7,19 @@
     <title>PathWise AI</title>
 
     <!--
-      Content-Security-Policy
+      Content-Security-Policy (meta-tag fallback for dev; production enforced via HTTP headers in vercel.json / netlify.toml)
       - default-src 'self'                        — same-origin resources only by default
       - script-src 'self'                         — no inline scripts, no eval
-      - style-src 'self' 'unsafe-inline' fonts.googleapis.com — Tailwind inline styles + Google Fonts CSS
-      - font-src fonts.gstatic.com               — Google Fonts binary assets
+      - style-src 'self' 'unsafe-inline'          — Tailwind inline styles; Inter font self-hosted via @fontsource/inter
+      - font-src 'self'                           — Inter served from the app bundle (no external CDN)
       - connect-src 'self' *.supabase.co wss://*.supabase.co — Supabase REST + Realtime
       - img-src 'self' data:                      — no external image loading
-      - frame-ancestors 'none'                    — prevent clickjacking
+      - frame-ancestors 'none'                    — NOTE: only enforced when sent as an HTTP response header,
+                                                     not from a <meta> tag; vercel.json / netlify.toml handle this
       - base-uri 'self'                           — prevent base-tag injection
       - form-action 'self'                        — prevent form hijacking
     -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
 
     <!-- Prevent MIME-type sniffing attacks -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
@@ -29,9 +30,8 @@
     <!-- Limit referrer information sent to third parties -->
     <meta name="referrer" content="strict-origin-when-cross-origin" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Inter font is self-hosted via @fontsource/inter (imported in src/main.jsx).
+         No external font CDN requests; eliminates the Google Fonts SRI / privacy risk. -->
   </head>
   <body>
     <div id="root"></div>

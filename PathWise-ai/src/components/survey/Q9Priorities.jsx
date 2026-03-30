@@ -46,7 +46,8 @@ export default function Q8Priorities() {
   } = useSurveyStore()
 
   const handleNext = () => {
-    // Log all Q1–Q9 inputs + NPV result to question_data (non-blocking)
+    // Persist all Q1–Q9 inputs + NPV result to question_data (non-blocking —
+    // navigation is not gated on this write, but errors are logged for visibility).
     logQuestionData(
       {
         schools, major, residency, isInState, incomeBracket,
@@ -54,7 +55,9 @@ export default function Q8Priorities() {
         workHours, interests, greekLife, weatherPref,
       },
       comparisonResult
-    )
+    ).then(({ error }) => {
+      if (error) console.error('[PathWise] question_data save failed:', error.message)
+    })
     goNext()
   }
 
@@ -95,8 +98,12 @@ export default function Q8Priorities() {
         onChange={(e) => setInterests(e.target.value)}
         placeholder="e.g. entrepreneurship, music, outdoor activities, research…"
         rows={3}
+        maxLength={2000}
         className="w-full px-4 py-3 rounded-lg border border-[#e9e9e7] bg-white text-sm text-[#37352f] placeholder-[#c4c4c0] resize-none focus:outline-none focus:border-[#37352f] transition-colors duration-150"
       />
+      {interests.length > 1800 && (
+        <p className="text-xs text-amber-600 mt-1">{2000 - interests.length} characters remaining</p>
+      )}
 
       {/* 3) Greek life */}
       <SectionLabel number={3}>Is Greek life important to you?</SectionLabel>

@@ -96,6 +96,22 @@ const CAREER_YEARS = 40
 const FOREGONE_WAGE = 35000
 const DEFAULT_TUITION = { inState: 12000, outOfState: 36000, private: 58000 }
 
+// Prestige premium half-life: the earnings premium above the local-school baseline
+// decays to 50% of its initial value after this many career years, reflecting that
+// work experience increasingly dominates credential signaling over time.
+const PRESTIGE_DECAY_HALF_LIFE = 15
+
+/**
+ * Compute the decayed prestige multiplier at career experience year X.
+ * At X=0  → full multiplier (e.g. 1.35 for elite)
+ * At X=15 → 1 + (multiplier-1)/2  (e.g. 1.175 for elite)
+ * At X=40 → approaches 1.0 (experience fully replaces credential signal)
+ */
+function decayedPrestigeMultiplier(baseMultiplier, experienceYear) {
+  const decay = Math.exp((-Math.LN2 / PRESTIGE_DECAY_HALF_LIFE) * experienceYear)
+  return 1 + (baseMultiplier - 1) * decay
+}
+
 /**
  * Look up annual tuition for a school.
  * Priority order:
@@ -189,8 +205,9 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
 
     const logWage = mincerLogWage(coeffs, X)
     const rawWage = Math.exp(logWage)
-    // Apply prestige multiplier and employment-rate risk adjustment
-    const adjustedWage = rawWage * prestige.multiplier * coeffs.employment_rate
+    // Prestige premium decays exponentially with experience; employment rate is constant
+    const multiplier = decayedPrestigeMultiplier(prestige.multiplier, X)
+    const adjustedWage = rawWage * multiplier * coeffs.employment_rate
 
     cumulativeWealth += adjustedWage * discountFactor
     trajectory.push({

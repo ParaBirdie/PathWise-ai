@@ -58,6 +58,13 @@ export default function Q7FinancialAid() {
       }
     })
 
+    const householdIncome = incomeBracket?.value
+    if (typeof householdIncome !== 'number' || householdIncome < 0) {
+      setError('Please go back and select a household income range before continuing.')
+      setLoading(false)
+      return
+    }
+
     try {
       // Load live data from Supabase in parallel (each falls back to static data on error)
       const [maps, coeffMap] = await Promise.all([fetchUniversityMaps(), fetchCareerCoefficients()])
@@ -74,7 +81,7 @@ export default function Q7FinancialAid() {
       const result = compareOffers(
         schools,
         major,
-        incomeBracket?.value || 80000,
+        householdIncome,
         residency,
         goals,
         parsedOffers

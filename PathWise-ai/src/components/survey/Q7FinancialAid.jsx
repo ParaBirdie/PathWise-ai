@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { GraduationCap, CircleDollarSign } from 'lucide-react'
 import { useSurveyStore } from '../../store/surveyStore'
-import { compareOffers, setUniversityMaps } from '../../lib/npvEngine'
-import { fetchUniversityMaps } from '../../lib/universityService'
+import { compareOffers, setUniversityMaps, setMajorCoefficients } from '../../lib/npvEngine'
+import { fetchUniversityMaps, fetchCareerCoefficients } from '../../lib/universityService'
 import { supabase } from '../../lib/supabase'
 import QuestionCard from './QuestionCard'
 
 export default function Q7FinancialAid() {
   const {
-    schools, major, incomeBracket, isInState, residency, goals,
+    schools, major, incomeBracket, residency, goals,
     setFinancialAidOffers, setComparisonResult, goNext,
   } = useSurveyStore()
 
@@ -58,17 +58,31 @@ export default function Q7FinancialAid() {
       }
     })
 
-    try {
-      // Load live university data from Supabase (falls back to static maps on error)
-      const maps = await fetchUniversityMaps()
-      if (maps) setUniversityMaps(maps.tierMap, maps.tuitionMap)
+    const householdIncome = incomeBracket?.value
+    if (typeof householdIncome !== 'number' || householdIncome < 0) {
+      setError('Please go back and select a household income range before continuing.')
+      setLoading(false)
+      return
+    }
 
-      // Run NPV comparison with actual aid amounts
+    try {
+      // Load live data from Supabase in parallel (each falls back to static data on error)
+      const [maps, coeffMap] = await Promise.all([fetchUniversityMaps(), fetchCareerCoefficients()])
+      if (maps) setUniversityMaps(
+        maps.tierMap,
+        maps.tuitionMap,
+        maps.inStateTuitionMap,
+        maps.outStateTuitionMap,
+        maps.locationStateMap,
+      )
+      if (coeffMap) setMajorCoefficients(coeffMap)
+
+      // Run NPV comparison — per-school isInState is resolved inside compareOffers
       const result = compareOffers(
         schools,
         major,
-        incomeBracket?.value || 80000,
-        isInState,
+        householdIncome,
+        residency,
         goals,
         parsedOffers
       )

@@ -6,8 +6,7 @@ export const useSurveyStore = create((set, get) => ({
   major: '',                 // Q2: string
   careerIndustry: '',        // Q2b: string
   careerRole: '',            // Q2b: string
-  residency: '',             // Q3: string (state/country)
-  isInState: false,          // derived from Q3
+  residency: '',             // Q3: string (state/country) — per-school isInState derived in engine
   incomeBracket: null,       // Q4: { label, value }
   goals: [],                 // Q5: string[] — one or more of the PRIMARY_GOALS values
   alumniData: {},            // Q6: { [school]: string (range) }
@@ -29,7 +28,7 @@ export const useSurveyStore = create((set, get) => ({
   setSchools: (schools) => set({ schools }),
   setMajor: (major) => set({ major }),
   setCareer: (careerIndustry, careerRole) => set({ careerIndustry, careerRole }),
-  setResidency: (residency, isInState) => set({ residency, isInState }),
+  setResidency: (residency) => set({ residency }),
   setIncomeBracket: (incomeBracket) => set({ incomeBracket }),
   toggleGoal: (value) => set((state) => ({
     goals: state.goals.includes(value)
@@ -58,7 +57,7 @@ export const useSurveyStore = create((set, get) => ({
     set({ currentStep: step, direction: step > currentStep ? 1 : -1 })
   },
   reset: () => set({
-    schools: [], major: '', careerIndustry: '', careerRole: '', residency: '', isInState: false,
+    schools: [], major: '', careerIndustry: '', careerRole: '', residency: '',
     incomeBracket: null, goals: [], alumniData: {}, financialAidOffers: {}, studentRatings: {},
     workHours: '', interests: '', greekLife: '', weatherPref: '',
     currentStep: 0, direction: 1, comparisonResult: null,

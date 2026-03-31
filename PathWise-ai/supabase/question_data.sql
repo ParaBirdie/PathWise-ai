@@ -39,7 +39,7 @@ create table if not exists public.question_data (
   -- Q6: Alumni network data per school  { "MIT": "20-50", "Stanford": "50+" }
   q6_alumni_data   jsonb,
 
-  -- Q7: Financial aid offers per school  { "MIT": 45000, "Harvard": null }
+  -- Q7: Financial aid offers per school  { "MIT": 45000, "Harvard": null } null = no offer entered = $0 aid (no estimation)
   q7_financial_aid jsonb,
 
   -- Q8: Student personal ratings per school  { "MIT": 9, "Harvard": 7 }

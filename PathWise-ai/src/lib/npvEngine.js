@@ -14,29 +14,80 @@
  *   β1–4 = quartic experience-earnings coefficients
  *
  * NPV Components:
- *   Cost        = (annual_tuition × 4) − aid
+ *   Cost        = annual_tuition × 4  (aid = only what student entered; $0 if nothing entered)
  *   Opp. Cost   = 4 × $35,000 (foregone wages during college)
  *   Total Cost  = Cost + Opp. Cost (discounted)
  *   Benefit     = Sum of discounted annual earnings over 40-year horizon
  *   NPV         = Benefit − Total Cost
  */
 
-import { MAJOR_COEFFICIENTS, UNIVERSITY_PRESTIGE, SCHOOL_TIER_MAP, SCHOOL_TUITION_MAP } from './economicData.js'
+import {
+  MAJOR_COEFFICIENTS, UNIVERSITY_PRESTIGE,
+  SCHOOL_TIER_MAP, SCHOOL_TUITION_MAP,
+  SCHOOL_IN_STATE_TUITION_MAP, SCHOOL_OUT_STATE_TUITION_MAP,
+  SCHOOL_LOCATION_STATE_MAP, US_STATE_ABBR,
+} from './economicData.js'
+
+// Runtime-overridable Mincerian coefficients from the career_trajectories DB table.
+// Structure: { [major]: { [tier]: { y0, r, beta1, beta2, beta3, beta4, employment_rate, signal_weight } } }
+// Falls back to the flat MAJOR_COEFFICIENTS map (major-only, no tier differentiation)
+// when the DB table has not been loaded or does not have an entry for a given major×tier.
+let _majorCoefficients = {}
 
 // Runtime-overridable maps — start with the static seed data from economicData.js.
-// Call setUniversityMaps() (e.g. from Q6Alumni after fetching Supabase) to inject
-// live DB values so newly added schools are automatically correct without a code deploy.
-let _tierMap = SCHOOL_TIER_MAP
-let _tuitionMap = SCHOOL_TUITION_MAP
+// Call setUniversityMaps() after fetching Supabase to inject live DB values so newly
+// added schools are automatically correct without a code deploy.
+let _tierMap          = SCHOOL_TIER_MAP
+let _tuitionMap       = SCHOOL_TUITION_MAP           // private tuition
+let _inStateTuitionMap  = SCHOOL_IN_STATE_TUITION_MAP
+let _outStateTuitionMap = SCHOOL_OUT_STATE_TUITION_MAP
+let _locationStateMap   = SCHOOL_LOCATION_STATE_MAP  // school → 2-letter state abbr
 
 /**
- * Override the tier and tuition maps with live data from the database.
- * DB values are merged on top of the static fallbacks, so the static data
+ * Override the Mincerian coefficient maps with live data from career_trajectories.
+ * DB entries take priority over the static MAJOR_COEFFICIENTS fallback.
+ * @param {{ [major]: { [tier]: object } }} coeffMap
+ */
+export function setMajorCoefficients(coeffMap) {
+  _majorCoefficients = coeffMap || {}
+}
+
+/**
+ * Resolve Mincerian coefficients for a given major and university tier.
+ * Prefers DB-sourced per-tier coefficients; falls back to the static major-only map.
+ */
+function resolveCoefficients(major, tier) {
+  const tierSpecific = _majorCoefficients[major]?.[tier]
+  if (tierSpecific) return tierSpecific
+  return MAJOR_COEFFICIENTS[major] || MAJOR_COEFFICIENTS['Undecided']
+}
+
+/**
+ * Override all lookup maps with live data from the database.
+ * DB values are merged on top of the static fallbacks so the static data
  * still covers any school the DB query might miss.
  */
-export function setUniversityMaps(tierMap, tuitionMap) {
-  _tierMap = { ...SCHOOL_TIER_MAP, ...tierMap }
-  _tuitionMap = { ...SCHOOL_TUITION_MAP, ...tuitionMap }
+export function setUniversityMaps(tierMap, tuitionMap, inStateTuitionMap = {}, outStateTuitionMap = {}, locationStateMap = {}) {
+  _tierMap            = { ...SCHOOL_TIER_MAP,            ...tierMap }
+  _tuitionMap         = { ...SCHOOL_TUITION_MAP,         ...tuitionMap }
+  _inStateTuitionMap  = { ...SCHOOL_IN_STATE_TUITION_MAP,  ...inStateTuitionMap }
+  _outStateTuitionMap = { ...SCHOOL_OUT_STATE_TUITION_MAP, ...outStateTuitionMap }
+  _locationStateMap   = { ...SCHOOL_LOCATION_STATE_MAP,    ...locationStateMap }
+}
+
+/**
+ * Determine whether a school is in-state for a given residency.
+ * Private schools always return false (they have no in/out-of-state distinction).
+ * @param {string} schoolName
+ * @param {string} residencyState - Full US state name (e.g. "California") or country
+ * @returns {boolean}
+ */
+export function resolveIsInState(schoolName, residencyState) {
+  const schoolStateAbbr = _locationStateMap[schoolName]
+  if (!schoolStateAbbr) return false  // private school or unknown — no in-state rate
+  const residencyAbbr = US_STATE_ABBR[residencyState]
+  if (!residencyAbbr) return false    // international student
+  return schoolStateAbbr === residencyAbbr
 }
 
 const DISCOUNT_RATE = 0.05
@@ -45,34 +96,48 @@ const CAREER_YEARS = 40
 const FOREGONE_WAGE = 35000
 const DEFAULT_TUITION = { inState: 12000, outOfState: 36000, private: 58000 }
 
-/**
- * Estimate annual tuition for a school name.
- * Production would query the Supabase `career_trajectories` table.
- */
-export function estimateTuition(schoolName, isInState) {
-  const name = schoolName?.toLowerCase() || ''
-  const tier = _tierMap[schoolName] || 'flagship'
+// Prestige premium half-life: the earnings premium above the local-school baseline
+// decays to 50% of its initial value after this many career years, reflecting that
+// work experience increasingly dominates credential signaling over time.
+const PRESTIGE_DECAY_HALF_LIFE = 15
 
-  if (name.includes('community') || name.includes('cc ')) return 5500
-  if (_tuitionMap[schoolName]) return _tuitionMap[schoolName]
-  if (tier === 'elite') return DEFAULT_TUITION.private
-  if (tier === 'research') return isInState ? 18000 : DEFAULT_TUITION.outOfState
-  return isInState ? DEFAULT_TUITION.inState : DEFAULT_TUITION.outOfState
+/**
+ * Compute the decayed prestige multiplier at career experience year X.
+ * At X=0  → full multiplier (e.g. 1.35 for elite)
+ * At X=15 → 1 + (multiplier-1)/2  (e.g. 1.175 for elite)
+ * At X=40 → approaches 1.0 (experience fully replaces credential signal)
+ */
+function decayedPrestigeMultiplier(baseMultiplier, experienceYear) {
+  const decay = Math.exp((-Math.LN2 / PRESTIGE_DECAY_HALF_LIFE) * experienceYear)
+  return 1 + (baseMultiplier - 1) * decay
 }
 
 /**
- * Estimate financial aid based on household income and university tier.
+ * Look up annual tuition for a school.
+ * Priority order:
+ *   1. Private tuition map (exact DB value for private schools)
+ *   2. Public in-state / out-of-state map (exact DB values for public schools)
+ *   3. Community college flat rate
+ *   4. Tier-based hardcoded fallback (last resort when school is not in any map)
  */
-export function estimateAid(householdIncome, schoolName) {
-  const tier = _tierMap[schoolName] || 'flagship'
-  const tierData = UNIVERSITY_PRESTIGE[tier] || UNIVERSITY_PRESTIGE.flagship
-  const aidBase = tierData.aid_base
-  const sensitivity = tierData.aid_income_sensitivity
+export function estimateTuition(schoolName, isInState) {
+  const name = schoolName?.toLowerCase() || ''
 
-  // Aid decreases as income increases (simplified FAFSA curve)
-  const incomeRatio = Math.min(householdIncome / 60000, 3.0)
-  const aid = aidBase * Math.max(0, 1 - sensitivity * (incomeRatio - 0.5) * 0.4)
-  return Math.round(Math.max(0, aid))
+  // 1. Private school — tuition is the same regardless of residency
+  if (_tuitionMap[schoolName]) return _tuitionMap[schoolName]
+
+  // 2. Public school — use exact in/out-of-state values from DB
+  if (isInState && _inStateTuitionMap[schoolName])  return _inStateTuitionMap[schoolName]
+  if (!isInState && _outStateTuitionMap[schoolName]) return _outStateTuitionMap[schoolName]
+
+  // 3. Community college flat rate
+  if (name.includes('community') || name.includes('cc ')) return 5500
+
+  // 4. Tier-based fallback (school not in any map — should not happen for seeded schools)
+  const tier = _tierMap[schoolName] || 'flagship'
+  if (tier === 'elite') return DEFAULT_TUITION.private
+  if (tier === 'research') return isInState ? DEFAULT_TUITION.inState : DEFAULT_TUITION.outOfState
+  return isInState ? DEFAULT_TUITION.inState : DEFAULT_TUITION.outOfState
 }
 
 /**
@@ -99,22 +164,21 @@ function mincerLogWage(coeffs, experienceYear) {
  * @param {number} householdIncome
  * @param {boolean} isInState
  * @param {number} [startAge=18]
- * @param {number|null} [actualAid=null] - Actual aid from offer letter; if null, estimated from FAFSA curve
+ * @param {number|null} [actualAid=null] - Aid from offer letter; null or missing = $0 (no estimation)
  * Returns an array of { year, age, wage, cumulativeWealth } objects.
  */
 export function buildTrajectory(schoolName, major, householdIncome, isInState, startAge = 18, actualAid = null) {
-  const coeffs = MAJOR_COEFFICIENTS[major] || MAJOR_COEFFICIENTS['Undecided']
   const tier = _tierMap[schoolName] || 'flagship'
+  // Use tier-specific coefficients from the DB when available; fall back to static map
+  const coeffs = resolveCoefficients(major, tier)
   const prestige = UNIVERSITY_PRESTIGE[tier] || UNIVERSITY_PRESTIGE.flagship
 
   const annualTuition = estimateTuition(schoolName, isInState)
-  const annualAid = (actualAid !== null && actualAid !== undefined)
-    ? actualAid
-    : estimateAid(householdIncome, schoolName)
+  const annualAid = (actualAid !== null && actualAid !== undefined) ? actualAid : 0
   const netAnnualCost = Math.max(0, annualTuition - annualAid)
 
   const trajectory = []
-  let cumulativeWealth = 0
+  let cumulativeWealth = 0  // kept unrounded throughout for NPV precision
 
   // Precompute the per-year discount factor to avoid repeated exponentiation
   const ANNUAL_DISCOUNT = 1 / (1 + DISCOUNT_RATE)
@@ -130,7 +194,7 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
       age: startAge + yr - 1,
       wage: 0,
       cost: Math.round(yearCost),
-      cumulativeWealth: Math.round(cumulativeWealth),
+      cumulativeWealth: Math.round(cumulativeWealth),  // rounded for display only
     })
     discountFactor *= ANNUAL_DISCOUNT
   }
@@ -141,8 +205,9 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
 
     const logWage = mincerLogWage(coeffs, X)
     const rawWage = Math.exp(logWage)
-    // Apply prestige multiplier and employment-rate risk adjustment
-    const adjustedWage = rawWage * prestige.multiplier * coeffs.employment_rate
+    // Prestige premium decays exponentially with experience; employment rate is constant
+    const multiplier = decayedPrestigeMultiplier(prestige.multiplier, X)
+    const adjustedWage = rawWage * multiplier * coeffs.employment_rate
 
     cumulativeWealth += adjustedWage * discountFactor
     trajectory.push({
@@ -151,12 +216,14 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
       age: startAge + calendarYear - 1,
       wage: Math.round(adjustedWage),
       cost: 0,
-      cumulativeWealth: Math.round(cumulativeWealth),
+      cumulativeWealth: Math.round(cumulativeWealth),  // rounded for display only
     })
     discountFactor *= ANNUAL_DISCOUNT
   }
 
-  return trajectory
+  // Return the unrounded final wealth alongside the trajectory so calculateNPV
+  // uses the full-precision value rather than the last rounded display entry.
+  return { trajectory, npvRaw: cumulativeWealth }
 }
 
 /**
@@ -165,22 +232,17 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
  * @param {string} major
  * @param {number} householdIncome
  * @param {boolean} isInState
- * @param {number|null} [actualAid=null] - Actual aid from offer letter; if null, uses FAFSA estimate
+ * @param {number|null} [actualAid=null] - Aid from offer letter; null or missing = $0 (no estimation)
  */
 export function calculateNPV(schoolName, major, householdIncome, isInState, actualAid = null) {
-  const trajectory = buildTrajectory(schoolName, major, householdIncome, isInState, 18, actualAid)
-  const finalEntry = trajectory[trajectory.length - 1]
-  // estimateAid is already called inside buildTrajectory when actualAid is null;
-  // compute it once here rather than calling it a second time.
-  const estimatedAid = estimateAid(householdIncome, schoolName)
+  const aidUsed = (actualAid !== null && actualAid !== undefined) ? actualAid : 0
+  const { trajectory, npvRaw } = buildTrajectory(schoolName, major, householdIncome, isInState, 18, aidUsed)
   return {
-    npv: finalEntry.cumulativeWealth,
+    npv: npvRaw,  // unrounded — compareOffers rounds to integer on the result object
     trajectory,
     annualTuition: estimateTuition(schoolName, isInState),
-    estimatedAid,
-    actualAid,
-    // 'actual' only when the student entered a specific positive amount
-    aidSource: (actualAid !== null && actualAid > 0) ? 'actual' : 'estimated',
+    aidUsed,
+    aidSource: aidUsed > 0 ? 'entered' : 'none',
   }
 }
 
@@ -190,12 +252,21 @@ export function calculateNPV(schoolName, major, householdIncome, isInState, actu
 function goalRawScore(result, goalValue) {
   switch (goalValue) {
     case 'minimize_cost':
-      return -result.netCostTotal
+      // Use the full discounted economic cost (tuition + foregone wages) to match
+      // the cost side of the NPV calculation — not the tuition-only netCostTotal.
+      return -result.collegeCostNPV
     case 'maximize_roi':
       return result.npv
     case 'industry_fit':
-      // Blend prestige importance (signalWeight) with employment rate
-      return result.signalWeight * result.prestigeScore + (100 - result.signalWeight) * result.employmentRate
+      // Score = prestige (school-varying) weighted by signal fraction
+      //       + employmentRate (major-level, used as a field-demand multiplier)
+      // Both components are school-comparable: prestigeScore varies by tier (45–95),
+      // employmentRate is treated as a scalar multiplier on prestige so that fields
+      // with low employment probability discount the prestige benefit.
+      // signal_weight determines how much brand vs. skill drives the outcome for
+      // this field; higher signal = prestige matters more for industry access.
+      return (result.signalWeight / 100) * result.prestigeScore * (result.employmentRate / 100)
+        + (1 - result.signalWeight / 100) * result.employmentRate
     case 'grad_school':
       return result.prestigeScore
     case 'prestige_optionality':
@@ -212,11 +283,13 @@ function goalRawScore(result, goalValue) {
  * @param {string[]} schools
  * @param {string} major
  * @param {number} householdIncome
- * @param {boolean} isInState
+ * @param {string} residencyState - Full US state name (e.g. "California") or country.
+ *   Per-school isInState is derived automatically by comparing the student's state
+ *   against each school's location_state in the DB.
  * @param {string[]} goals - Array of PRIMARY_GOALS values; falls back to ['maximize_roi']
  * @param {Object} [financialAidOffers={}] - Map of { [schoolName]: number | null } from offer letters
  */
-export function compareOffers(schools, major, householdIncome, isInState, goals = ['maximize_roi'], financialAidOffers = {}) {
+export function compareOffers(schools, major, householdIncome, residencyState, goals = ['maximize_roi'], financialAidOffers = {}) {
   if (!Array.isArray(schools) || schools.length === 0) {
     throw new Error('compareOffers: schools must be a non-empty array')
   }
@@ -225,25 +298,31 @@ export function compareOffers(schools, major, householdIncome, isInState, goals 
   }
 
   const activeGoals = Array.isArray(goals) && goals.length > 0 ? goals : ['maximize_roi']
-  const coeffs = MAJOR_COEFFICIENTS[major] || MAJOR_COEFFICIENTS['Undecided']
 
   const results = schools.slice(0, 4).map((school) => {
-    // financialAidOffers always contains a number (0 = skipped/blank, >0 = student-entered).
-    // Pass it directly so buildTrajectory uses 0 cost-of-aid when the student didn't specify.
-    const actualAid = financialAidOffers[school] ?? 0
-    const { npv, trajectory, annualTuition, estimatedAid, aidSource } = calculateNPV(
-      school, major, householdIncome, isInState, actualAid
-    )
+    // Derive per-school in-state status from the student's residency state
+    const isInState = resolveIsInState(school, residencyState)
+
     const tier = _tierMap[school] || 'flagship'
+    // Use tier-specific coefficients (from DB when available, static fallback otherwise)
+    const coeffs = resolveCoefficients(major, tier)
     const prestige = UNIVERSITY_PRESTIGE[tier] || UNIVERSITY_PRESTIGE.flagship
 
+    // financialAidOffers always contains a number (0 = skipped/blank, >0 = student-entered).
+    const actualAid = financialAidOffers[school] ?? 0
+    const { npv, trajectory, annualTuition, aidUsed: computedAid, aidSource } = calculateNPV(
+      school, major, householdIncome, isInState, actualAid
+    )
+
     const careerTrajectory = trajectory.filter((t) => t.phase === 'career')
+    const collegeTrajectory = trajectory.filter((t) => t.phase === 'college')
     const entryWage = careerTrajectory[0]?.wage || 0
     const year10Wage = careerTrajectory[9]?.wage || 0
+    // Sum of discounted college-year costs (tuition + foregone wages) — matches NPV cost basis
+    const collegeCostNPV = collegeTrajectory.reduce((sum, t) => sum + t.cost, 0)
 
-    // The aid amount actually used in the calculation.
-    // Always the student's input: a positive entered amount or 0 (skip/blank).
-    const aidUsed = actualAid
+    // aidUsed = student-entered amount, or 0 if nothing was entered (no estimation)
+    const aidUsed = computedAid
 
     // Signal vs Skill decomposition
     const skillROI = npv * (1 - coeffs.signal_weight * (1 - 1 / prestige.multiplier))
@@ -255,13 +334,14 @@ export function compareOffers(schools, major, householdIncome, isInState, goals 
     return {
       school,
       tier,
+      isInState,
       npv: Math.round(npv),
       trajectory,
       annualTuition,
-      estimatedAid,
       aidUsed,
       aidSource,
-      netCostTotal: Math.round((annualTuition - aidUsed) * 4),
+      netCostTotal: Math.round(Math.max(0, annualTuition - aidUsed) * 4),  // 4-yr net tuition (display)
+      collegeCostNPV,  // discounted total economic cost incl. foregone wages (scoring)
       entryWage,
       year10Wage,
       signalWeight: Math.round(coeffs.signal_weight * 100),
@@ -294,7 +374,7 @@ export function compareOffers(schools, major, householdIncome, isInState, goals 
   const second = results[1]
   const lifecycleDividend = second ? best.npv - second.npv : best.npv
 
-  return { results, best, lifecycleDividend, major, coefficients: coeffs }
+  return { results, best, lifecycleDividend, major, coefficients: resolveCoefficients(major, 'flagship') }
 }
 
 /**

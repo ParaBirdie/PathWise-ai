@@ -1,7 +1,7 @@
 /**
  * universityService — Live university data from Supabase.
  *
- * Fetches tier and private tuition values from the `university_financials` table
+ * Fetches tier, all tuition columns, and location_state from `university_financials`
  * and returns them as lookup maps compatible with npvEngine's setUniversityMaps().
  *
  * The result is cached for the session so the DB is only queried once per page load.
@@ -17,8 +17,15 @@ import { supabase } from './supabase.js'
 let _cache = null
 
 /**
- * Fetch tier and tuition maps from `university_financials`.
- * @returns {{ tierMap: Record<string,string>, tuitionMap: Record<string,number> } | null}
+ * Fetch tier, tuition (private + in/out-of-state), and location maps from
+ * `university_financials`.
+ * @returns {{
+ *   tierMap: Record<string,string>,
+ *   tuitionMap: Record<string,number>,
+ *   inStateTuitionMap: Record<string,number>,
+ *   outStateTuitionMap: Record<string,number>,
+ *   locationStateMap: Record<string,string>
+ * } | null}
  */
 export async function fetchUniversityMaps() {
   if (_cache) return _cache
@@ -26,20 +33,26 @@ export async function fetchUniversityMaps() {
   try {
     const { data, error } = await supabase
       .from('university_financials')
-      .select('school_name, tier, tuition_private')
+      .select('school_name, tier, tuition_private, tuition_in_state, tuition_out_state, location_state')
 
     if (error || !data?.length) return null
 
     const tierMap = {}
-    const tuitionMap = {}
+    const tuitionMap = {}          // private tuition (for private schools)
+    const inStateTuitionMap = {}   // public in-state tuition
+    const outStateTuitionMap = {}  // public out-of-state tuition
+    const locationStateMap = {}    // school → 2-letter state abbr
 
-    data.forEach(({ school_name, tier, tuition_private }) => {
-      if (school_name && tier) tierMap[school_name] = tier
-      // Only store private tuition — public schools use the isInState tier fallback
-      if (school_name && tuition_private) tuitionMap[school_name] = tuition_private
+    data.forEach(({ school_name, tier, tuition_private, tuition_in_state, tuition_out_state, location_state }) => {
+      if (!school_name) return
+      if (tier) tierMap[school_name] = tier
+      if (tuition_private)  tuitionMap[school_name] = tuition_private
+      if (tuition_in_state) inStateTuitionMap[school_name] = tuition_in_state
+      if (tuition_out_state) outStateTuitionMap[school_name] = tuition_out_state
+      if (location_state)   locationStateMap[school_name] = location_state
     })
 
-    _cache = { tierMap, tuitionMap }
+    _cache = { tierMap, tuitionMap, inStateTuitionMap, outStateTuitionMap, locationStateMap }
     return _cache
   } catch {
     // Network error or Supabase misconfiguration — graceful fallback to static maps
@@ -50,4 +63,47 @@ export async function fetchUniversityMaps() {
 /** Clear the session cache (useful in tests or after a DB update). */
 export function clearUniversityCache() {
   _cache = null
+}
+
+let _coeffCache = null
+
+/**
+ * Fetch Mincerian coefficients from `career_trajectories`.
+ * Returns a nested map { [major]: { [tier]: coefficients } } or null on failure.
+ * The DB stores log_y0 (natural log of baseline wage); we convert to raw y0
+ * so the engine can call Math.log(y0) consistently.
+ */
+export async function fetchCareerCoefficients() {
+  if (_coeffCache) return _coeffCache
+
+  try {
+    const { data, error } = await supabase
+      .from('career_trajectories')
+      .select('major, university_tier, log_y0, r_schooling, beta1, beta2, beta3, beta4, employment_rate, signal_weight')
+
+    if (error || !data?.length) return null
+
+    const coeffMap = {}
+    data.forEach(({ major, university_tier, log_y0, r_schooling, beta1, beta2, beta3, beta4, employment_rate, signal_weight }) => {
+      if (!major || !university_tier) return
+      if (!coeffMap[major]) coeffMap[major] = {}
+      coeffMap[major][university_tier] = {
+        y0: Math.exp(log_y0),   // convert log_y0 → raw dollar baseline wage
+        r: r_schooling,
+        beta1, beta2, beta3, beta4,
+        employment_rate,
+        signal_weight,
+      }
+    })
+
+    _coeffCache = coeffMap
+    return _coeffCache
+  } catch {
+    return null
+  }
+}
+
+/** Clear the coefficients cache (useful in tests or after a DB update). */
+export function clearCoefficientsCache() {
+  _coeffCache = null
 }

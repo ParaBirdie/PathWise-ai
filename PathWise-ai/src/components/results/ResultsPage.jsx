@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { RefreshCw, TrendingUp } from 'lucide-react'
 import { useSurveyStore } from '../../store/surveyStore'
 import { formatCurrency } from '../../lib/npvEngine'
-import { PRIMARY_GOALS } from '../../lib/economicData'
+import { PRIMARY_GOALS, SCHOOL_COLORS } from '../../lib/economicData'
 import { fetchLatestQuestionData } from '../../lib/questionDataService'
 import WealthChart from './WealthChart'
 import SchoolCard from './SchoolCard'
@@ -36,8 +36,6 @@ function isValidResultSnapshot(snapshot) {
       typeof r.employmentRate === 'number'
   )
 }
-
-const SCHOOL_COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b']
 
 const stagger = {
   container: { transition: { staggerChildren: 0.08 } },

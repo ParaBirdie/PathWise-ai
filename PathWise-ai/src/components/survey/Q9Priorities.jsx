@@ -34,25 +34,24 @@ function SectionLabel({ number, children }) {
 }
 
 export default function Q8Priorities() {
-  const {
-    workHours, setWorkHours,
-    interests, setInterests,
-    greekLife, setGreekLife,
-    weatherPref, setWeatherPref,
-    goNext,
-    comparisonResult,
-    schools, major, residency, isInState, incomeBracket,
-    goals, alumniData, financialAidOffers, studentRatings,
-  } = useSurveyStore()
+  const { workHours, setWorkHours, interests, setInterests, greekLife, setGreekLife, weatherPref, setWeatherPref, goNext } = useSurveyStore()
 
   const handleNext = () => {
+    // Read survey state at call time — avoids subscribing the component to fields
+    // that are only needed for the one-time log call, preventing unnecessary re-renders.
+    const {
+      schools, major, residency, isInState, incomeBracket,
+      goals, alumniData, financialAidOffers, studentRatings,
+      workHours: wh, interests: int, greekLife: gl, weatherPref: wp,
+      comparisonResult,
+    } = useSurveyStore.getState()
     // Persist all Q1–Q9 inputs + NPV result to question_data (non-blocking —
     // navigation is not gated on this write, but errors are logged for visibility).
     logQuestionData(
       {
         schools, major, residency, isInState, incomeBracket,
         goals, alumniData, financialAidOffers, studentRatings,
-        workHours, interests, greekLife, weatherPref,
+        workHours: wh, interests: int, greekLife: gl, weatherPref: wp,
       },
       comparisonResult
     ).then(({ error }) => {

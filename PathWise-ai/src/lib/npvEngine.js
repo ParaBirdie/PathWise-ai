@@ -316,7 +316,7 @@ export function compareOffers(schools, major, householdIncome, residencyState, g
       annualTuition,
       aidUsed,
       aidSource,
-      netCostTotal: Math.round((annualTuition - aidUsed) * 4),  // 4-yr net tuition (display)
+      netCostTotal: Math.round(Math.max(0, annualTuition - aidUsed) * 4),  // 4-yr net tuition (display)
       collegeCostNPV,  // discounted total economic cost incl. foregone wages (scoring)
       entryWage,
       year10Wage,

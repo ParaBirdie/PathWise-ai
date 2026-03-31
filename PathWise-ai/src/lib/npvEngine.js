@@ -241,8 +241,15 @@ function goalRawScore(result, goalValue) {
     case 'maximize_roi':
       return result.npv
     case 'industry_fit':
-      // Blend prestige importance (signalWeight) with employment rate
-      return result.signalWeight * result.prestigeScore + (100 - result.signalWeight) * result.employmentRate
+      // Score = prestige (school-varying) weighted by signal fraction
+      //       + employmentRate (major-level, used as a field-demand multiplier)
+      // Both components are school-comparable: prestigeScore varies by tier (45–95),
+      // employmentRate is treated as a scalar multiplier on prestige so that fields
+      // with low employment probability discount the prestige benefit.
+      // signal_weight determines how much brand vs. skill drives the outcome for
+      // this field; higher signal = prestige matters more for industry access.
+      return (result.signalWeight / 100) * result.prestigeScore * (result.employmentRate / 100)
+        + (1 - result.signalWeight / 100) * result.employmentRate
     case 'grad_school':
       return result.prestigeScore
     case 'prestige_optionality':

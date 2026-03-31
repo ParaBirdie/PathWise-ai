@@ -6,6 +6,10 @@ import { fetchUniversityMaps, fetchCareerCoefficients } from '../../lib/universi
 import { supabase } from '../../lib/supabase'
 import QuestionCard from './QuestionCard'
 
+// Maximum plausible annual grant/scholarship. Prevents arbitrarily large
+// values from distorting NPV calculations and inflating result_snapshot JSONB.
+const MAX_AID = 100000
+
 export default function Q7FinancialAid() {
   const {
     schools, major, incomeBracket, residency, goals,
@@ -20,9 +24,10 @@ export default function Q7FinancialAid() {
   const [error, setError] = useState(null)
 
   const handleInput = (school, raw) => {
-    // Strip non-digits for internal storage, but keep raw for display
+    // Strip non-digits, then clamp to MAX_AID before storing
     const digits = raw.replace(/[^\d]/g, '')
-    setInputs((prev) => ({ ...prev, [school]: digits }))
+    const clamped = digits ? String(Math.min(parseInt(digits, 10), MAX_AID)) : ''
+    setInputs((prev) => ({ ...prev, [school]: clamped }))
   }
 
   const handleSkip = (school) => {
@@ -54,7 +59,7 @@ export default function Q7FinancialAid() {
       } else {
         const digits = inputs[s]
         const num = digits ? parseInt(digits, 10) : NaN
-        parsedOffers[s] = isNaN(num) ? 0 : num
+        parsedOffers[s] = isNaN(num) ? 0 : Math.min(num, MAX_AID)
       }
     })
 
@@ -89,12 +94,19 @@ export default function Q7FinancialAid() {
       setComparisonResult(result)
       setFinancialAidOffers(parsedOffers)
 
-      // Persist to Supabase (non-blocking — failures are logged but don't stop navigation)
-      try {
-        const { data: authData } = await supabase.auth.signInAnonymously()
-        const sessionToken = authData?.user?.id
-        if (sessionToken) {
-          supabase.from('survey_sessions').insert({
+      // Persist to Supabase (non-blocking — navigation is not gated on this write,
+      // but errors are surfaced to the console for operator visibility).
+      ;(async () => {
+        try {
+          const { data: authData, error: authErr } = await supabase.auth.signInAnonymously()
+          if (authErr) {
+            console.error('[PathWise] Anonymous auth failed during session save:', authErr.message)
+            return
+          }
+          const sessionToken = authData?.user?.id
+          if (!sessionToken) return
+
+          const { error: dbErr } = await supabase.from('survey_sessions').insert({
             session_token: sessionToken,
             schools,
             major,
@@ -118,14 +130,13 @@ export default function Q7FinancialAid() {
                 compositeScore: r.compositeScore,
               })),
             },
-          }).then(({ error: dbErr }) => {
-            if (dbErr) console.warn('[PathWise] Session save failed:', dbErr.message)
           })
+          if (dbErr) console.error('[PathWise] survey_sessions save failed:', dbErr.message, dbErr.code)
+        } catch (err) {
+          // Supabase client unavailable (e.g. env vars not set in dev) — non-fatal
+          console.warn('[PathWise] Supabase persistence skipped:', err.message)
         }
-      } catch (supabaseErr) {
-        // Supabase unavailable (e.g. env vars not set) — non-fatal
-        console.warn('[PathWise] Supabase persistence skipped:', supabaseErr.message)
-      }
+      })()
 
       goNext()
     } catch (err) {

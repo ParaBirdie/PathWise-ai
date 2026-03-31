@@ -12,4 +12,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Use sessionStorage instead of localStorage so the anonymous session is
+// scoped to the current browser tab. Closing the tab clears the identity,
+// meaning every new visit starts with a fresh anonymous user and cannot
+// access question_data rows written by a previous session.
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: window.sessionStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+  },
+})

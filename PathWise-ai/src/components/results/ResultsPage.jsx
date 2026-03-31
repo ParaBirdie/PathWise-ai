@@ -10,6 +10,32 @@ import SchoolCard from './SchoolCard'
 
 const GOAL_LABEL = Object.fromEntries(PRIMARY_GOALS.map(({ value, label }) => [value, label]))
 
+/**
+ * Guard against a malformed or attacker-crafted result_snapshot retrieved
+ * from the database. Verifies that the object has the minimum shape required
+ * to render the results UI without runtime errors.
+ */
+function isValidResultSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return false
+  if (typeof snapshot.lifecycleDividend !== 'number') return false
+  if (!snapshot.best || typeof snapshot.best.school !== 'string') return false
+  if (!Array.isArray(snapshot.results) || snapshot.results.length === 0) return false
+  return snapshot.results.every(
+    (r) =>
+      r !== null &&
+      typeof r === 'object' &&
+      typeof r.school === 'string' &&
+      typeof r.npv === 'number' &&
+      typeof r.compositeScore === 'number' &&
+      Array.isArray(r.trajectory) &&
+      typeof r.annualTuition === 'number' &&
+      typeof r.entryWage === 'number' &&
+      typeof r.year10Wage === 'number' &&
+      typeof r.skillWeight === 'number' &&
+      typeof r.signalWeight === 'number' &&
+      typeof r.employmentRate === 'number'
+  )
+}
 
 const stagger = {
   container: { transition: { staggerChildren: 0.08 } },
@@ -29,8 +55,10 @@ export default function ResultsPage() {
     if (comparisonResult) { setLoading(false); return }
 
     fetchLatestQuestionData().then(({ data }) => {
-      if (data?.result_snapshot) {
+      if (data?.result_snapshot && isValidResultSnapshot(data.result_snapshot)) {
         setComparisonResult(data.result_snapshot)
+      } else if (data?.result_snapshot) {
+        console.warn('[PathWise] Discarded result_snapshot with unexpected shape')
       }
       setLoading(false)
     })

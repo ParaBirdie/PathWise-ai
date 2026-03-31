@@ -235,7 +235,9 @@ export function calculateNPV(schoolName, major, householdIncome, isInState, actu
 function goalRawScore(result, goalValue) {
   switch (goalValue) {
     case 'minimize_cost':
-      return -result.netCostTotal
+      // Use the full discounted economic cost (tuition + foregone wages) to match
+      // the cost side of the NPV calculation — not the tuition-only netCostTotal.
+      return -result.collegeCostNPV
     case 'maximize_roi':
       return result.npv
     case 'industry_fit':
@@ -289,8 +291,11 @@ export function compareOffers(schools, major, householdIncome, residencyState, g
     )
 
     const careerTrajectory = trajectory.filter((t) => t.phase === 'career')
+    const collegeTrajectory = trajectory.filter((t) => t.phase === 'college')
     const entryWage = careerTrajectory[0]?.wage || 0
     const year10Wage = careerTrajectory[9]?.wage || 0
+    // Sum of discounted college-year costs (tuition + foregone wages) — matches NPV cost basis
+    const collegeCostNPV = collegeTrajectory.reduce((sum, t) => sum + t.cost, 0)
 
     // aidUsed = student-entered amount, or 0 if nothing was entered (no estimation)
     const aidUsed = computedAid
@@ -311,7 +316,8 @@ export function compareOffers(schools, major, householdIncome, residencyState, g
       annualTuition,
       aidUsed,
       aidSource,
-      netCostTotal: Math.round((annualTuition - aidUsed) * 4),
+      netCostTotal: Math.round((annualTuition - aidUsed) * 4),  // 4-yr net tuition (display)
+      collegeCostNPV,  // discounted total economic cost incl. foregone wages (scoring)
       entryWage,
       year10Wage,
       signalWeight: Math.round(coeffs.signal_weight * 100),

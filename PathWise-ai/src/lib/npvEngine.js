@@ -28,6 +28,12 @@ import {
   SCHOOL_LOCATION_STATE_MAP, US_STATE_ABBR,
 } from './economicData.js'
 
+// Runtime-overridable Mincerian coefficients from the career_trajectories DB table.
+// Structure: { [major]: { [tier]: { y0, r, beta1, beta2, beta3, beta4, employment_rate, signal_weight } } }
+// Falls back to the flat MAJOR_COEFFICIENTS map (major-only, no tier differentiation)
+// when the DB table has not been loaded or does not have an entry for a given major×tier.
+let _majorCoefficients = {}
+
 // Runtime-overridable maps — start with the static seed data from economicData.js.
 // Call setUniversityMaps() after fetching Supabase to inject live DB values so newly
 // added schools are automatically correct without a code deploy.
@@ -36,6 +42,25 @@ let _tuitionMap       = SCHOOL_TUITION_MAP           // private tuition
 let _inStateTuitionMap  = SCHOOL_IN_STATE_TUITION_MAP
 let _outStateTuitionMap = SCHOOL_OUT_STATE_TUITION_MAP
 let _locationStateMap   = SCHOOL_LOCATION_STATE_MAP  // school → 2-letter state abbr
+
+/**
+ * Override the Mincerian coefficient maps with live data from career_trajectories.
+ * DB entries take priority over the static MAJOR_COEFFICIENTS fallback.
+ * @param {{ [major]: { [tier]: object } }} coeffMap
+ */
+export function setMajorCoefficients(coeffMap) {
+  _majorCoefficients = coeffMap || {}
+}
+
+/**
+ * Resolve Mincerian coefficients for a given major and university tier.
+ * Prefers DB-sourced per-tier coefficients; falls back to the static major-only map.
+ */
+function resolveCoefficients(major, tier) {
+  const tierSpecific = _majorCoefficients[major]?.[tier]
+  if (tierSpecific) return tierSpecific
+  return MAJOR_COEFFICIENTS[major] || MAJOR_COEFFICIENTS['Undecided']
+}
 
 /**
  * Override all lookup maps with live data from the database.
@@ -127,8 +152,9 @@ function mincerLogWage(coeffs, experienceYear) {
  * Returns an array of { year, age, wage, cumulativeWealth } objects.
  */
 export function buildTrajectory(schoolName, major, householdIncome, isInState, startAge = 18, actualAid = null) {
-  const coeffs = MAJOR_COEFFICIENTS[major] || MAJOR_COEFFICIENTS['Undecided']
   const tier = _tierMap[schoolName] || 'flagship'
+  // Use tier-specific coefficients from the DB when available; fall back to static map
+  const coeffs = resolveCoefficients(major, tier)
   const prestige = UNIVERSITY_PRESTIGE[tier] || UNIVERSITY_PRESTIGE.flagship
 
   const annualTuition = estimateTuition(schoolName, isInState)
@@ -246,19 +272,21 @@ export function compareOffers(schools, major, householdIncome, residencyState, g
   }
 
   const activeGoals = Array.isArray(goals) && goals.length > 0 ? goals : ['maximize_roi']
-  const coeffs = MAJOR_COEFFICIENTS[major] || MAJOR_COEFFICIENTS['Undecided']
 
   const results = schools.slice(0, 4).map((school) => {
     // Derive per-school in-state status from the student's residency state
     const isInState = resolveIsInState(school, residencyState)
+
+    const tier = _tierMap[school] || 'flagship'
+    // Use tier-specific coefficients (from DB when available, static fallback otherwise)
+    const coeffs = resolveCoefficients(major, tier)
+    const prestige = UNIVERSITY_PRESTIGE[tier] || UNIVERSITY_PRESTIGE.flagship
 
     // financialAidOffers always contains a number (0 = skipped/blank, >0 = student-entered).
     const actualAid = financialAidOffers[school] ?? 0
     const { npv, trajectory, annualTuition, aidUsed: computedAid, aidSource } = calculateNPV(
       school, major, householdIncome, isInState, actualAid
     )
-    const tier = _tierMap[school] || 'flagship'
-    const prestige = UNIVERSITY_PRESTIGE[tier] || UNIVERSITY_PRESTIGE.flagship
 
     const careerTrajectory = trajectory.filter((t) => t.phase === 'career')
     const entryWage = careerTrajectory[0]?.wage || 0
@@ -316,7 +344,7 @@ export function compareOffers(schools, major, householdIncome, residencyState, g
   const second = results[1]
   const lifecycleDividend = second ? best.npv - second.npv : best.npv
 
-  return { results, best, lifecycleDividend, major, coefficients: coeffs }
+  return { results, best, lifecycleDividend, major, coefficients: resolveCoefficients(major, 'flagship') }
 }
 
 /**

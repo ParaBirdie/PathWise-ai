@@ -64,3 +64,46 @@ export async function fetchUniversityMaps() {
 export function clearUniversityCache() {
   _cache = null
 }
+
+let _coeffCache = null
+
+/**
+ * Fetch Mincerian coefficients from `career_trajectories`.
+ * Returns a nested map { [major]: { [tier]: coefficients } } or null on failure.
+ * The DB stores log_y0 (natural log of baseline wage); we convert to raw y0
+ * so the engine can call Math.log(y0) consistently.
+ */
+export async function fetchCareerCoefficients() {
+  if (_coeffCache) return _coeffCache
+
+  try {
+    const { data, error } = await supabase
+      .from('career_trajectories')
+      .select('major, university_tier, log_y0, r_schooling, beta1, beta2, beta3, beta4, employment_rate, signal_weight')
+
+    if (error || !data?.length) return null
+
+    const coeffMap = {}
+    data.forEach(({ major, university_tier, log_y0, r_schooling, beta1, beta2, beta3, beta4, employment_rate, signal_weight }) => {
+      if (!major || !university_tier) return
+      if (!coeffMap[major]) coeffMap[major] = {}
+      coeffMap[major][university_tier] = {
+        y0: Math.exp(log_y0),   // convert log_y0 → raw dollar baseline wage
+        r: r_schooling,
+        beta1, beta2, beta3, beta4,
+        employment_rate,
+        signal_weight,
+      }
+    })
+
+    _coeffCache = coeffMap
+    return _coeffCache
+  } catch {
+    return null
+  }
+}
+
+/** Clear the coefficients cache (useful in tests or after a DB update). */
+export function clearCoefficientsCache() {
+  _coeffCache = null
+}

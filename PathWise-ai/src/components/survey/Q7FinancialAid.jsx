@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { GraduationCap, CircleDollarSign } from 'lucide-react'
 import { useSurveyStore } from '../../store/surveyStore'
-import { compareOffers, setUniversityMaps } from '../../lib/npvEngine'
-import { fetchUniversityMaps } from '../../lib/universityService'
+import { compareOffers, setUniversityMaps, setMajorCoefficients } from '../../lib/npvEngine'
+import { fetchUniversityMaps, fetchCareerCoefficients } from '../../lib/universityService'
 import { supabase } from '../../lib/supabase'
 import QuestionCard from './QuestionCard'
 
@@ -59,8 +59,8 @@ export default function Q7FinancialAid() {
     })
 
     try {
-      // Load live university data from Supabase (falls back to static maps on error)
-      const maps = await fetchUniversityMaps()
+      // Load live data from Supabase in parallel (each falls back to static data on error)
+      const [maps, coeffMap] = await Promise.all([fetchUniversityMaps(), fetchCareerCoefficients()])
       if (maps) setUniversityMaps(
         maps.tierMap,
         maps.tuitionMap,
@@ -68,6 +68,7 @@ export default function Q7FinancialAid() {
         maps.outStateTuitionMap,
         maps.locationStateMap,
       )
+      if (coeffMap) setMajorCoefficients(coeffMap)
 
       // Run NPV comparison — per-school isInState is resolved inside compareOffers
       const result = compareOffers(

@@ -162,7 +162,7 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
   const netAnnualCost = Math.max(0, annualTuition - annualAid)
 
   const trajectory = []
-  let cumulativeWealth = 0
+  let cumulativeWealth = 0  // kept unrounded throughout for NPV precision
 
   // Precompute the per-year discount factor to avoid repeated exponentiation
   const ANNUAL_DISCOUNT = 1 / (1 + DISCOUNT_RATE)
@@ -178,7 +178,7 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
       age: startAge + yr - 1,
       wage: 0,
       cost: Math.round(yearCost),
-      cumulativeWealth: Math.round(cumulativeWealth),
+      cumulativeWealth: Math.round(cumulativeWealth),  // rounded for display only
     })
     discountFactor *= ANNUAL_DISCOUNT
   }
@@ -199,12 +199,14 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
       age: startAge + calendarYear - 1,
       wage: Math.round(adjustedWage),
       cost: 0,
-      cumulativeWealth: Math.round(cumulativeWealth),
+      cumulativeWealth: Math.round(cumulativeWealth),  // rounded for display only
     })
     discountFactor *= ANNUAL_DISCOUNT
   }
 
-  return trajectory
+  // Return the unrounded final wealth alongside the trajectory so calculateNPV
+  // uses the full-precision value rather than the last rounded display entry.
+  return { trajectory, npvRaw: cumulativeWealth }
 }
 
 /**
@@ -217,14 +219,12 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
  */
 export function calculateNPV(schoolName, major, householdIncome, isInState, actualAid = null) {
   const aidUsed = (actualAid !== null && actualAid !== undefined) ? actualAid : 0
-  const trajectory = buildTrajectory(schoolName, major, householdIncome, isInState, 18, aidUsed)
-  const finalEntry = trajectory[trajectory.length - 1]
+  const { trajectory, npvRaw } = buildTrajectory(schoolName, major, householdIncome, isInState, 18, aidUsed)
   return {
-    npv: finalEntry.cumulativeWealth,
+    npv: npvRaw,  // unrounded — compareOffers rounds to integer on the result object
     trajectory,
     annualTuition: estimateTuition(schoolName, isInState),
     aidUsed,
-    // 'entered' when the student provided a positive amount; 'none' otherwise
     aidSource: aidUsed > 0 ? 'entered' : 'none',
   }
 }

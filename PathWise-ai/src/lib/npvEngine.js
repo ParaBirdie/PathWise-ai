@@ -113,6 +113,19 @@ function decayedPrestigeMultiplier(baseMultiplier, experienceYear) {
 }
 
 /**
+ * Compute the simple average of the decayed prestige multiplier across the full career.
+ * Used for signal/skill decomposition so the decomposition is consistent with the
+ * decayed multipliers applied year-by-year inside buildTrajectory.
+ */
+function careerAverageDecayedMultiplier(baseMultiplier) {
+  let sum = 0
+  for (let X = 1; X <= CAREER_YEARS; X++) {
+    sum += decayedPrestigeMultiplier(baseMultiplier, X)
+  }
+  return sum / CAREER_YEARS
+}
+
+/**
  * Look up annual tuition for a school.
  * Priority order:
  *   1. Private tuition map (exact DB value for private schools)
@@ -178,7 +191,8 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
   const netAnnualCost = Math.max(0, annualTuition - annualAid)
 
   const trajectory = []
-  let cumulativeWealth = 0  // kept unrounded throughout for NPV precision
+  let cumulativeWealth = 0      // kept unrounded throughout for NPV precision
+  let collegeCostNPVRaw = 0     // unrounded sum of discounted college costs (for scoring)
 
   // Precompute the per-year discount factor to avoid repeated exponentiation
   const ANNUAL_DISCOUNT = 1 / (1 + DISCOUNT_RATE)
@@ -188,6 +202,7 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
   for (let yr = 1; yr <= SCHOOLING_YEARS; yr++) {
     const yearCost = (netAnnualCost + FOREGONE_WAGE) * discountFactor
     cumulativeWealth -= yearCost
+    collegeCostNPVRaw += yearCost  // accumulate before rounding
     trajectory.push({
       year: yr,
       phase: 'college',
@@ -221,9 +236,9 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
     discountFactor *= ANNUAL_DISCOUNT
   }
 
-  // Return the unrounded final wealth alongside the trajectory so calculateNPV
-  // uses the full-precision value rather than the last rounded display entry.
-  return { trajectory, npvRaw: cumulativeWealth }
+  // Return unrounded values alongside the trajectory so callers use full-precision
+  // figures rather than summing rounded display entries.
+  return { trajectory, npvRaw: cumulativeWealth, collegeCostNPVRaw }
 }
 
 /**
@@ -236,13 +251,14 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
  */
 export function calculateNPV(schoolName, major, householdIncome, isInState, actualAid = null) {
   const aidUsed = (actualAid !== null && actualAid !== undefined) ? actualAid : 0
-  const { trajectory, npvRaw } = buildTrajectory(schoolName, major, householdIncome, isInState, 18, aidUsed)
+  const { trajectory, npvRaw, collegeCostNPVRaw } = buildTrajectory(schoolName, major, householdIncome, isInState, 18, aidUsed)
   return {
     npv: npvRaw,  // unrounded — compareOffers rounds to integer on the result object
     trajectory,
     annualTuition: estimateTuition(schoolName, isInState),
     aidUsed,
     aidSource: aidUsed > 0 ? 'entered' : 'none',
+    collegeCostNPVRaw,
   }
 }
 
@@ -268,11 +284,21 @@ function goalRawScore(result, goalValue) {
       return (result.signalWeight / 100) * result.prestigeScore * (result.employmentRate / 100)
         + (1 - result.signalWeight / 100) * result.employmentRate
     case 'grad_school':
-      return result.prestigeScore
+      // Grad school admission is disproportionately driven by elite credentials.
+      // A convex (power) transformation amplifies the gap between tiers so that
+      // elite >> research >> flagship >> local rather than a near-linear spread.
+      return result.prestigeScore ** 1.5
     case 'prestige_optionality':
-      return result.prestigeScore
+      // Optionality = the financial value of the brand signal itself — how many career
+      // doors open regardless of skill. signalROI is the dollar portion of NPV driven
+      // by credential signaling, which varies by both school tier and major signal_weight.
+      return result.signalROI
     case 'program_strength':
-      return result.employmentRate + result.prestigeScore * 0.5
+      // skillROI = the portion of NPV attributable to actual skill (not credential signaling).
+      // It varies by school tier (prestige → higher raw NPV → higher skill component) AND by
+      // major (signal_weight splits the pie differently per field). This correctly differentiates
+      // schools without collapsing to a prestige-only rank or a constant employmentRate offset.
+      return result.skillROI
     default:
       return result.npv
   }
@@ -310,22 +336,24 @@ export function compareOffers(schools, major, householdIncome, residencyState, g
 
     // financialAidOffers always contains a number (0 = skipped/blank, >0 = student-entered).
     const actualAid = financialAidOffers[school] ?? 0
-    const { npv, trajectory, annualTuition, aidUsed: computedAid, aidSource } = calculateNPV(
+    const { npv, trajectory, annualTuition, aidUsed: computedAid, aidSource, collegeCostNPVRaw } = calculateNPV(
       school, major, householdIncome, isInState, actualAid
     )
 
     const careerTrajectory = trajectory.filter((t) => t.phase === 'career')
-    const collegeTrajectory = trajectory.filter((t) => t.phase === 'college')
     const entryWage = careerTrajectory[0]?.wage || 0
     const year10Wage = careerTrajectory[9]?.wage || 0
-    // Sum of discounted college-year costs (tuition + foregone wages) — matches NPV cost basis
-    const collegeCostNPV = collegeTrajectory.reduce((sum, t) => sum + t.cost, 0)
+    // Use unrounded college cost from buildTrajectory — avoids accumulating 4× rounding errors
+    const collegeCostNPV = collegeCostNPVRaw
 
     // aidUsed = student-entered amount, or 0 if nothing was entered (no estimation)
     const aidUsed = computedAid
 
-    // Signal vs Skill decomposition
-    const skillROI = npv * (1 - coeffs.signal_weight * (1 - 1 / prestige.multiplier))
+    // Signal vs Skill decomposition.
+    // Use the career-average decayed multiplier (not the flat base) so this decomposition
+    // is internally consistent with the year-by-year decayed prestige applied in buildTrajectory.
+    const avgMultiplier = careerAverageDecayedMultiplier(prestige.multiplier)
+    const skillROI = npv * (1 - coeffs.signal_weight * (1 - 1 / avgMultiplier))
     const signalROI = npv - skillROI
 
     // Prestige score for goal weighting
@@ -372,7 +400,9 @@ export function compareOffers(schools, major, householdIncome, residencyState, g
 
   const best = results[0]
   const second = results[1]
-  const lifecycleDividend = second ? best.npv - second.npv : best.npv
+  // lifecycleDividend = NPV advantage of the best school over the next-best.
+  // Returns 0 when only one school is compared (no meaningful "advantage over next-best").
+  const lifecycleDividend = second ? best.npv - second.npv : 0
 
   return { results, best, lifecycleDividend, major, coefficients: resolveCoefficients(major, 'flagship') }
 }

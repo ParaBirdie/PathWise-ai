@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
-import { Download, FileText, File, Mail, Link2, Check, Share2 } from 'lucide-react'
+import { Download, FileText, File, Mail, Link2, Check, Share2, X } from 'lucide-react'
 import { formatCurrency } from '../../lib/npvEngine'
 import { PRIMARY_GOALS } from '../../lib/economicData'
 
 const GOAL_LABEL = Object.fromEntries(PRIMARY_GOALS.map(({ value, label }) => [value, label]))
 
-/* ── Inline SVG icons for platforms Lucide doesn't cover ── */
-const XIcon = () => (
+/* ── Platform icons ── */
+const XBirdIcon = () => (
   <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" aria-hidden="true">
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.259 5.63L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
   </svg>
@@ -50,9 +50,7 @@ function buildWordDocument(comparisonResult, major, goals) {
 <head>
   <meta charset="utf-8">
   <title>PathWise Analysis</title>
-  <!--[if gte mso 9]>
-  <xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml>
-  <![endif]-->
+  <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
   <style>
     body { font-family: Calibri, sans-serif; color: #1d1d1f; margin: 72pt; }
     h1   { font-size: 28pt; color: #1d1d1f; margin-bottom: 4pt; }
@@ -68,25 +66,18 @@ function buildWordDocument(comparisonResult, major, goals) {
 <body>
   <h1>Your PathWise Analysis</h1>
   <p class="sub">${major} &nbsp;·&nbsp; ${goalStr} &nbsp;·&nbsp; 40-year projection</p>
-
   <h2>Life-Cycle Dividend</h2>
   <p class="dividend">${dividendSign}${formatCurrency(lifecycleDividend, true)}</p>
   <p class="sub">Net wealth advantage of <b>${best.school}</b> over your next-best option (NPV-discounted, 40 years)</p>
-
   <h2>School Comparison</h2>
   <table>
     <thead>
       <tr>
-        <th>School</th>
-        <th>40-yr NPV</th>
-        <th>Entry Wage</th>
-        <th>Year-10 Wage</th>
-        <th>Tuition</th>
+        <th>School</th><th>40-yr NPV</th><th>Entry Wage</th><th>Year-10 Wage</th><th>Tuition</th>
       </tr>
     </thead>
     <tbody>${schoolRows}</tbody>
   </table>
-
   <p class="note">
     <b>Methodology:</b> Earnings modeled via the Quartic Mincerian equation (Murphy &amp; Welch, 1990).
     NPV uses a 5% annual discount rate, 40-year career horizon, and includes $35k/yr opportunity cost during college.
@@ -96,40 +87,31 @@ function buildWordDocument(comparisonResult, major, goals) {
 </html>`
 }
 
-/* ── Main component ── */
+/* ── Main export: always-visible floating button + dropdown ── */
 export default function DownloadShareMenu({ comparisonResult, major, goals }) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const menuRef = useRef(null)
-  const closeTimer = useRef(null)
 
   /* Close on outside click */
   useEffect(() => {
+    if (!open) return
     const handler = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
-  /* Debounced close so moving between trigger → menu doesn't flicker */
-  const handleMouseEnter = () => {
-    clearTimeout(closeTimer.current)
-    setOpen(true)
-  }
-  const handleMouseLeave = () => {
-    closeTimer.current = setTimeout(() => setOpen(false), 150)
-  }
+  }, [open])
 
   const { best, lifecycleDividend } = comparisonResult
   const dividendSign = lifecycleDividend >= 0 ? '+' : ''
   const shareText = `I used PathWise to compare colleges — ${best.school} came out on top with a ${dividendSign}${formatCurrency(lifecycleDividend, true)} life-cycle financial advantage over 40 years. See my full analysis:`
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
+  const shareUrl = window.location.href
 
-  /* ── Save handlers ── */
+  /* ── Save ── */
   const handlePDF = () => {
     setOpen(false)
-    setTimeout(() => window.print(), 100)
+    setTimeout(() => window.print(), 80)
   }
 
   const handleWord = () => {
@@ -144,154 +126,110 @@ export default function DownloadShareMenu({ comparisonResult, major, goals }) {
     setOpen(false)
   }
 
-  /* ── Share handlers ── */
-  const openShare = (url) => {
-    window.open(url, '_blank', 'noopener,noreferrer')
+  /* ── Share ── */
+  const openShare = (url) => { window.open(url, '_blank', 'noopener,noreferrer'); setOpen(false) }
+  const handleEmail    = () => openShare(`mailto:?subject=${encodeURIComponent('My PathWise College Analysis')}&body=${encodeURIComponent(shareText + '\n\n' + shareUrl)}`)
+  const handleX        = () => openShare(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`)
+  const handleWhatsApp = () => openShare(`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`)
+  const handleSMS      = () => openShare(`sms:?body=${encodeURIComponent(shareText + ' ' + shareUrl)}`)
+  const handleLinkedIn = () => openShare(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`)
+
+  const handleNativeShare = () => {
+    navigator.share?.({ title: 'My PathWise Analysis', text: shareText, url: shareUrl })
     setOpen(false)
   }
 
-  const handleEmail = () =>
-    openShare(
-      `mailto:?subject=${encodeURIComponent('My PathWise College Analysis')}&body=${encodeURIComponent(shareText + '\n\n' + shareUrl)}`,
-    )
-
-  const handleX = () =>
-    openShare(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
-    )
-
-  const handleWhatsApp = () =>
-    openShare(`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`)
-
-  const handleSMS = () =>
-    openShare(`sms:?body=${encodeURIComponent(shareText + ' ' + shareUrl)}`)
-
-  const handleLinkedIn = () =>
-    openShare(
-      `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
-    )
-
-  const handleNativeShare = () => {
-    if (navigator.share) {
-      navigator.share({ title: 'My PathWise Analysis', text: shareText, url: shareUrl })
-      setOpen(false)
-    }
-  }
-
   const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      /* fallback: do nothing */
-    }
+    try { await navigator.clipboard.writeText(shareUrl) } catch { /* ignore */ }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   const hasNativeShare = typeof navigator !== 'undefined' && !!navigator.share
 
-  /* ── Shared button style ── */
-  const optBtn =
-    'flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-[#1d1d1f] hover:bg-black/[0.04] transition-colors text-left'
-
-  const iconWrap = (color) =>
-    `flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-white ${color}`
+  /* Shared row button style */
+  const row = 'flex items-center gap-3 w-full px-3 py-2 rounded-xl text-sm text-[#1d1d1f] hover:bg-black/[0.05] transition-colors text-left'
+  const dot = (color) => `flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-white ${color}`
 
   return (
+    /* Fixed to bottom-right of viewport — always visible regardless of scroll */
     <div
       ref={menuRef}
-      className="relative inline-block"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      className="fixed bottom-6 right-6 z-50 no-print"
+      style={{ isolation: 'isolate' }}
     >
+      {/* ── Dropdown panel (opens upward) ── */}
+      {open && (
+        <div
+          className="absolute bottom-full right-0 mb-3 w-72 rounded-2xl border border-black/[0.07] shadow-2xl shadow-black/15 overflow-hidden"
+          style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(20px)' }}
+        >
+          <div className="p-3">
+            {/* Save */}
+            <p className="text-[10px] font-semibold text-[#aeaeb2] uppercase tracking-widest px-1 mb-1.5">Save</p>
+            <button onClick={handlePDF} className={row}>
+              <span className={dot('bg-red-500')}><FileText className="w-3.5 h-3.5" /></span>
+              Save as PDF
+            </button>
+            <button onClick={handleWord} className={row}>
+              <span className={dot('bg-blue-600')}><File className="w-3.5 h-3.5" /></span>
+              Save as Word (.doc)
+            </button>
+
+            <div className="my-2.5 border-t border-black/[0.06]" />
+
+            {/* Share */}
+            <p className="text-[10px] font-semibold text-[#aeaeb2] uppercase tracking-widest px-1 mb-1.5">Share</p>
+            <button onClick={handleEmail} className={row}>
+              <span className={dot('bg-gray-500')}><Mail className="w-3.5 h-3.5" /></span>
+              Email
+            </button>
+            <button onClick={handleX} className={row}>
+              <span className={dot('bg-black')}><XBirdIcon /></span>
+              X (Twitter)
+            </button>
+            <button onClick={handleWhatsApp} className={row}>
+              <span className={dot('bg-green-500')}><WhatsAppIcon /></span>
+              WhatsApp
+            </button>
+            <button onClick={handleSMS} className={row}>
+              <span className={dot('bg-green-400')}><Share2 className="w-3.5 h-3.5" /></span>
+              Text Message (SMS)
+            </button>
+            <button onClick={handleLinkedIn} className={row}>
+              <span className={dot('bg-[#0a66c2]')}><LinkedInIcon /></span>
+              LinkedIn
+            </button>
+            {hasNativeShare && (
+              <button onClick={handleNativeShare} className={row}>
+                <span className={dot('bg-violet-500')}><Share2 className="w-3.5 h-3.5" /></span>
+                More options…
+              </button>
+            )}
+            <button onClick={handleCopyLink} className={row}>
+              <span className={dot(copied ? 'bg-green-500' : 'bg-gray-400')}>
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Link2 className="w-3.5 h-3.5" />}
+              </span>
+              {copied ? 'Link copied!' : 'Copy link'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Trigger button ── */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-blue-500 to-violet-600 text-white text-sm font-medium shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
+        aria-label="Download or share results"
+        aria-expanded={open}
+        className="flex items-center gap-2 px-5 py-3 rounded-full text-white text-sm font-medium shadow-xl shadow-blue-500/30 transition-all hover:scale-[1.03] active:scale-[0.97]"
+        style={{
+          background: 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)',
+          boxShadow: '0 8px 32px rgba(59,130,246,0.35)',
+        }}
       >
         <Download className="w-4 h-4" />
-        Download Result
+        {open ? 'Close' : 'Download Result'}
       </button>
-
-      {/* ── Dropdown panel ── */}
-      {open && (
-        <div
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-72 bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/10 border border-black/[0.06] p-3 z-50"
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
-          {/* Arrow */}
-          <div className="absolute -bottom-[6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-white/90 border-r border-b border-black/[0.06] rotate-45" />
-
-          {/* ── Save section ── */}
-          <p className="text-[10px] font-semibold text-[#aeaeb2] uppercase tracking-widest px-1 mb-1">
-            Save
-          </p>
-          <button onClick={handlePDF} className={optBtn}>
-            <span className={iconWrap('bg-red-500')}>
-              <FileText className="w-3.5 h-3.5" />
-            </span>
-            Save as PDF
-          </button>
-          <button onClick={handleWord} className={optBtn}>
-            <span className={iconWrap('bg-blue-600')}>
-              <File className="w-3.5 h-3.5" />
-            </span>
-            Save as Word (.doc)
-          </button>
-
-          <div className="my-2 border-t border-black/[0.06]" />
-
-          {/* ── Share section ── */}
-          <p className="text-[10px] font-semibold text-[#aeaeb2] uppercase tracking-widest px-1 mb-1">
-            Share
-          </p>
-          <button onClick={handleEmail} className={optBtn}>
-            <span className={iconWrap('bg-gray-500')}>
-              <Mail className="w-3.5 h-3.5" />
-            </span>
-            Email
-          </button>
-          <button onClick={handleX} className={optBtn}>
-            <span className={iconWrap('bg-black')}>
-              <XIcon />
-            </span>
-            X (Twitter)
-          </button>
-          <button onClick={handleWhatsApp} className={optBtn}>
-            <span className={iconWrap('bg-green-500')}>
-              <WhatsAppIcon />
-            </span>
-            WhatsApp
-          </button>
-          <button onClick={handleSMS} className={optBtn}>
-            <span className={iconWrap('bg-green-400')}>
-              <Share2 className="w-3.5 h-3.5" />
-            </span>
-            Text Message (SMS)
-          </button>
-          <button onClick={handleLinkedIn} className={optBtn}>
-            <span className={iconWrap('bg-[#0a66c2]')}>
-              <LinkedInIcon />
-            </span>
-            LinkedIn
-          </button>
-          {hasNativeShare && (
-            <button onClick={handleNativeShare} className={optBtn}>
-              <span className={iconWrap('bg-violet-500')}>
-                <Share2 className="w-3.5 h-3.5" />
-              </span>
-              More options…
-            </button>
-          )}
-          <button onClick={handleCopyLink} className={optBtn}>
-            <span className={iconWrap(copied ? 'bg-green-500' : 'bg-gray-400')}>
-              {copied ? <Check className="w-3.5 h-3.5" /> : <Link2 className="w-3.5 h-3.5" />}
-            </span>
-            {copied ? 'Link copied!' : 'Copy link'}
-          </button>
-        </div>
-      )}
     </div>
   )
 }

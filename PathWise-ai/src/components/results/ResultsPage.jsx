@@ -73,6 +73,13 @@ export default function ResultsPage() {
         <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full bg-purple-100/30 blur-3xl" />
       </div>
 
+      {/* Floating download/share button — always visible, fixed to viewport */}
+      <DownloadShareMenu
+        comparisonResult={comparisonResult}
+        major={major}
+        goals={goals}
+      />
+
       <div className="relative z-10 max-w-2xl mx-auto px-4 py-16 pb-24">
         <motion.div
           initial="hidden"
@@ -148,17 +155,8 @@ export default function ResultsPage() {
             </p>
           </motion.div>
 
-          {/* Download & Share */}
-          <motion.div variants={stagger.item} className="mt-8 flex flex-col items-center gap-4 no-print">
-            <DownloadShareMenu
-              comparisonResult={comparisonResult}
-              major={major}
-              goals={goals}
-            />
-          </motion.div>
-
           {/* Reset */}
-          <motion.div variants={stagger.item} className="mt-4 text-center no-print">
+          <motion.div variants={stagger.item} className="mt-8 text-center no-print">
             <button
               onClick={reset}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-black/10 text-sm text-[#6e6e73] hover:text-[#1d1d1f] hover:border-black/20 transition-all"

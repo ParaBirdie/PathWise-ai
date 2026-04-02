@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { useSurveyStore } from '../../store/surveyStore'
 
-export default function QuestionCard({ question, subtitle, eyebrow, children, onNext, canProgress, nextLabel = 'Next' }) {
+export default function QuestionCard({ question, subtitle, eyebrow, headingStyle, children, onNext, canProgress, nextLabel = 'Next' }) {
   const goBack = useSurveyStore((s) => s.goBack)
 
   return (
@@ -19,7 +19,7 @@ export default function QuestionCard({ question, subtitle, eyebrow, children, on
         )}
         <h1
           className="font-bold leading-tight"
-          style={{ fontSize: 'clamp(2rem, 5vw, 3.75rem)', letterSpacing: '-0.02em', color: '#e7e5e4', marginBottom: '1rem' }}
+          style={{ fontSize: 'clamp(2rem, 5vw, 3.75rem)', letterSpacing: '-0.02em', color: '#e7e5e4', marginBottom: '1rem', ...headingStyle }}
         >
           {question}
         </h1>

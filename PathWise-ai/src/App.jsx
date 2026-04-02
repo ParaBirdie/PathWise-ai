@@ -31,6 +31,10 @@ const STEPS = [
 export default function App() {
   const currentStep = useSurveyStore((s) => s.currentStep)
 
+  if (currentStep === 0) {
+    return <Landing />
+  }
+
   if (currentStep === STEPS.length - 1) {
     return <ResultsPage />
   }

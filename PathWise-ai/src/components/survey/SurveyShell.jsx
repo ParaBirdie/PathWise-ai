@@ -59,7 +59,7 @@ export default function SurveyShell({ stepKey, children }) {
             initial="enter"
             animate="center"
             exit="exit"
-            className="w-full max-w-3xl"
+            className="w-full max-w-5xl"
           >
             {children}
           </motion.div>

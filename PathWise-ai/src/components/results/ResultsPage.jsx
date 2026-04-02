@@ -75,8 +75,8 @@ export default function ResultsPage() {
 
   if (!comparisonResult) return null
 
-  const { results, best, lifecycleDividend } = comparisonResult
-  const dividendPositive = lifecycleDividend >= 0
+  const { results, best } = comparisonResult
+  const second = results[1] ?? null
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0e0e0e', color: '#e7e5e4', position: 'relative' }}>
@@ -186,24 +186,58 @@ export default function ResultsPage() {
               <p
                 style={{
                   fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.15em',
-                  textTransform: 'uppercase', color: '#c4b5fd', marginBottom: '0.75rem',
+                  textTransform: 'uppercase', color: '#c4b5fd', marginBottom: '1.5rem',
                 }}
               >
                 Life-Cycle Dividend
               </p>
-              <p
+
+              {/* Two-number comparison: best vs runner-up */}
+              <div
                 style={{
-                  fontSize: 'clamp(3rem, 8vw, 5rem)', fontWeight: 900, letterSpacing: '-0.04em',
-                  lineHeight: 1, marginBottom: '0.75rem',
-                  color: dividendPositive ? '#e7e5e4' : '#ec7c8a',
+                  display: 'grid',
+                  gridTemplateColumns: '1fr auto 1fr',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  marginBottom: '1rem',
                 }}
               >
-                {dividendPositive ? '+' : ''}{formatCurrency(lifecycleDividend, true)}
-              </p>
-              <p style={{ fontSize: '0.9375rem', color: '#acabaa', maxWidth: '32rem', margin: '0 auto' }}>
-                Net wealth advantage of{' '}
-                <span style={{ color: '#e7e5e4', fontWeight: 600 }}>{best.school}</span>{' '}
-                over your next-best option (NPV-discounted, 40 years)
+                {/* Best option */}
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c4b5fd', marginBottom: '0.375rem' }}>
+                    Best Option
+                  </p>
+                  <p style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1, color: '#e7e5e4', marginBottom: '0.375rem' }}>
+                    {formatCurrency(best.npv, true)}
+                  </p>
+                  <p style={{ fontSize: '0.875rem', color: '#acabaa' }}>
+                    {best.school}
+                  </p>
+                </div>
+
+                {/* VS divider */}
+                <div style={{ textAlign: 'center', padding: '0 0.5rem' }}>
+                  <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#484848', letterSpacing: '0.05em' }}>
+                    vs
+                  </span>
+                </div>
+
+                {/* Runner-up */}
+                <div style={{ textAlign: 'left' }}>
+                  <p style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#767575', marginBottom: '0.375rem' }}>
+                    Runner-Up
+                  </p>
+                  <p style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1, color: '#acabaa', marginBottom: '0.375rem' }}>
+                    {second ? formatCurrency(second.npv, true) : '—'}
+                  </p>
+                  <p style={{ fontSize: '0.875rem', color: '#767575' }}>
+                    {second?.school ?? '—'}
+                  </p>
+                </div>
+              </div>
+
+              <p style={{ fontSize: '0.8125rem', color: '#767575', maxWidth: '32rem', margin: '0 auto' }}>
+                NPV-discounted 40-year wealth projection
               </p>
 
               {/* Mini stats */}

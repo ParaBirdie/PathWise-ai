@@ -102,6 +102,7 @@ export default function WealthChart({ results }) {
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 4, strokeWidth: 0 }}
+              isAnimationActive={false}
             />
           ))}
         </LineChart>

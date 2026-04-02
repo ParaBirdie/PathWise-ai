@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Download, FileText, File, Mail, Link2, Check, Share2, X } from 'lucide-react'
+import { Download, FileText, File, Mail, Link2, Check, Share2 } from 'lucide-react'
 import { formatCurrency } from '../../lib/npvEngine'
 import { PRIMARY_GOALS } from '../../lib/economicData'
 
@@ -147,68 +147,97 @@ export default function DownloadShareMenu({ comparisonResult, major, goals }) {
 
   const hasNativeShare = typeof navigator !== 'undefined' && !!navigator.share
 
-  /* Shared row button style */
-  const row = 'flex items-center gap-3 w-full px-3 py-2 rounded-xl text-sm text-[#1d1d1f] hover:bg-black/[0.05] transition-colors text-left'
-  const dot = (color) => `flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-white ${color}`
+  const rowStyle = {
+    display: 'flex', alignItems: 'center', gap: '0.75rem',
+    width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
+    fontSize: '0.8125rem', color: '#e7e5e4', backgroundColor: 'transparent',
+    border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background-color 0.12s ease',
+  }
+  const dotStyle = (bg) => ({
+    flexShrink: 0, width: '1.75rem', height: '1.75rem', borderRadius: '0.375rem',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: 'white', backgroundColor: bg,
+  })
 
   return (
     /* Fixed to bottom-right of viewport — always visible regardless of scroll */
     <div
       ref={menuRef}
-      className="fixed bottom-6 right-6 z-50 no-print"
-      style={{ isolation: 'isolate' }}
+      className="no-print"
+      style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 50, isolation: 'isolate' }}
     >
       {/* ── Dropdown panel (opens upward) ── */}
       {open && (
         <div
-          className="absolute bottom-full right-0 mb-3 w-72 rounded-2xl border border-black/[0.07] shadow-2xl shadow-black/15 overflow-hidden"
-          style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(20px)' }}
+          style={{
+            position: 'absolute', bottom: '100%', right: 0, marginBottom: '0.75rem',
+            width: '17rem', borderRadius: '0.875rem',
+            border: '1px solid rgba(72,72,72,0.25)',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+            overflow: 'hidden',
+            background: 'rgba(19,19,19,0.97)',
+            backdropFilter: 'blur(24px)',
+          }}
         >
-          <div className="p-3">
+          <div style={{ padding: '0.75rem' }}>
             {/* Save */}
-            <p className="text-[10px] font-semibold text-[#aeaeb2] uppercase tracking-widest px-1 mb-1.5">Save</p>
-            <button onClick={handlePDF} className={row}>
-              <span className={dot('bg-red-500')}><FileText className="w-3.5 h-3.5" /></span>
+            <p style={{ fontSize: '0.5625rem', fontWeight: 700, color: '#484848', textTransform: 'uppercase', letterSpacing: '0.12em', padding: '0 0.25rem', marginBottom: '0.375rem' }}>
+              Save
+            </p>
+            <button
+              onClick={handlePDF}
+              style={rowStyle}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#252626' }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+            >
+              <span style={dotStyle('#ef4444')}><FileText size={14} /></span>
               Save as PDF
             </button>
-            <button onClick={handleWord} className={row}>
-              <span className={dot('bg-blue-600')}><File className="w-3.5 h-3.5" /></span>
+            <button
+              onClick={handleWord}
+              style={rowStyle}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#252626' }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+            >
+              <span style={dotStyle('#2563eb')}><File size={14} /></span>
               Save as Word (.doc)
             </button>
 
-            <div className="my-2.5 border-t border-black/[0.06]" />
+            <div style={{ margin: '0.625rem 0', borderTop: '1px solid rgba(72,72,72,0.2)' }} />
 
             {/* Share */}
-            <p className="text-[10px] font-semibold text-[#aeaeb2] uppercase tracking-widest px-1 mb-1.5">Share</p>
-            <button onClick={handleEmail} className={row}>
-              <span className={dot('bg-gray-500')}><Mail className="w-3.5 h-3.5" /></span>
+            <p style={{ fontSize: '0.5625rem', fontWeight: 700, color: '#484848', textTransform: 'uppercase', letterSpacing: '0.12em', padding: '0 0.25rem', marginBottom: '0.375rem' }}>
+              Share
+            </p>
+            <button onClick={handleEmail} style={rowStyle} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#252626' }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}>
+              <span style={dotStyle('#6b7280')}><Mail size={14} /></span>
               Email
             </button>
-            <button onClick={handleX} className={row}>
-              <span className={dot('bg-black')}><XBirdIcon /></span>
+            <button onClick={handleX} style={rowStyle} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#252626' }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}>
+              <span style={dotStyle('#000000')}><XBirdIcon /></span>
               X (Twitter)
             </button>
-            <button onClick={handleWhatsApp} className={row}>
-              <span className={dot('bg-green-500')}><WhatsAppIcon /></span>
+            <button onClick={handleWhatsApp} style={rowStyle} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#252626' }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}>
+              <span style={dotStyle('#22c55e')}><WhatsAppIcon /></span>
               WhatsApp
             </button>
-            <button onClick={handleSMS} className={row}>
-              <span className={dot('bg-green-400')}><Share2 className="w-3.5 h-3.5" /></span>
+            <button onClick={handleSMS} style={rowStyle} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#252626' }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}>
+              <span style={dotStyle('#4ade80')}><Share2 size={14} /></span>
               Text Message (SMS)
             </button>
-            <button onClick={handleLinkedIn} className={row}>
-              <span className={dot('bg-[#0a66c2]')}><LinkedInIcon /></span>
+            <button onClick={handleLinkedIn} style={rowStyle} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#252626' }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}>
+              <span style={dotStyle('#0a66c2')}><LinkedInIcon /></span>
               LinkedIn
             </button>
             {hasNativeShare && (
-              <button onClick={handleNativeShare} className={row}>
-                <span className={dot('bg-violet-500')}><Share2 className="w-3.5 h-3.5" /></span>
+              <button onClick={handleNativeShare} style={rowStyle} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#252626' }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}>
+                <span style={dotStyle('#7c3aed')}><Share2 size={14} /></span>
                 More options…
               </button>
             )}
-            <button onClick={handleCopyLink} className={row}>
-              <span className={dot(copied ? 'bg-green-500' : 'bg-gray-400')}>
-                {copied ? <Check className="w-3.5 h-3.5" /> : <Link2 className="w-3.5 h-3.5" />}
+            <button onClick={handleCopyLink} style={rowStyle} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#252626' }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}>
+              <span style={dotStyle(copied ? '#22c55e' : '#6b7280')}>
+                {copied ? <Check size={14} /> : <Link2 size={14} />}
               </span>
               {copied ? 'Link copied!' : 'Copy link'}
             </button>
@@ -221,13 +250,22 @@ export default function DownloadShareMenu({ comparisonResult, major, goals }) {
         onClick={() => setOpen((o) => !o)}
         aria-label="Download or share results"
         aria-expanded={open}
-        className="flex items-center gap-2 px-5 py-3 rounded-full text-white text-sm font-medium shadow-xl shadow-blue-500/30 transition-all hover:scale-[1.03] active:scale-[0.97]"
         style={{
-          background: 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)',
-          boxShadow: '0 8px 32px rgba(59,130,246,0.35)',
+          display: 'flex', alignItems: 'center', gap: '0.5rem',
+          padding: '0.75rem 1.375rem', borderRadius: '9999px',
+          background: 'linear-gradient(135deg, #ccbeff 0%, #4a3d7c 100%)',
+          color: '#433675', fontSize: '0.75rem', fontWeight: 700,
+          letterSpacing: '0.08em', textTransform: 'uppercase',
+          border: 'none', cursor: 'pointer',
+          boxShadow: '0 8px 32px rgba(196,181,253,0.3)',
+          transition: 'transform 0.15s ease',
         }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.03)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+        onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.97)' }}
+        onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.03)' }}
       >
-        <Download className="w-4 h-4" />
+        <Download size={15} />
         {open ? 'Close' : 'Download Result'}
       </button>
     </div>

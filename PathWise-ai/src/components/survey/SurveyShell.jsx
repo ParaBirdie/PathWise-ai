@@ -25,7 +25,7 @@ export default function SurveyShell({ stepKey, children }) {
   const progress = (currentStep / TOTAL_QUESTIONS) * 100
 
   return (
-    <div className="relative min-h-screen flex flex-col overflow-hidden" style={{ backgroundColor: '#0e0e0e', color: '#e7e5e4' }}>
+    <div className="relative min-h-screen flex flex-col" style={{ backgroundColor: '#0e0e0e', color: '#e7e5e4' }}>
       {/* Top nav */}
       <nav className="fixed top-0 w-full h-16 flex items-center justify-between px-8 z-50" style={{ backgroundColor: '#0e0e0e' }}>
         <div className="text-xl font-bold tracking-tighter uppercase" style={{ color: '#c4b5fd' }}>
@@ -59,7 +59,7 @@ export default function SurveyShell({ stepKey, children }) {
             initial="enter"
             animate="center"
             exit="exit"
-            className="w-full max-w-3xl"
+            className="w-full max-w-5xl"
           >
             {children}
           </motion.div>

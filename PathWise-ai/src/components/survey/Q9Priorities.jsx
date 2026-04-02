@@ -1,8 +1,9 @@
-import { useSurveyStore } from '../../store/surveyStore'
-import QuestionCard from './QuestionCard'
+import { useState } from 'react'
+import { Sun, Snowflake, Cloud, Wind, Clock } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { Sun, Snowflake, Cloud, Wind } from 'lucide-react'
+import { useSurveyStore } from '../../store/surveyStore'
 import { logQuestionData } from '../../lib/questionDataService'
+import QuestionCard from './QuestionCard'
 
 const WORK_HOURS = [
   { label: 'Less than 20 hours', value: '<20h' },
@@ -13,46 +14,36 @@ const WORK_HOURS = [
 ]
 
 const GREEK_LIFE_OPTIONS = [
-  { label: 'Yes, very important',   value: 'yes' },
-  { label: 'Somewhat important',    value: 'somewhat' },
-  { label: 'Not important to me',   value: 'no' },
+  { label: 'Very Important',     value: 'yes' },
+  { label: 'Somewhat Important', value: 'somewhat' },
+  { label: 'Not Important',      value: 'no' },
 ]
 
 const WEATHER_OPTIONS = [
-  { label: 'Warm & sunny',      value: 'warm',      Icon: Sun },
-  { label: 'Cold & snowy',      value: 'cold',      Icon: Snowflake },
-  { label: 'Mild & temperate',  value: 'mild',      Icon: Cloud },
-  { label: 'No preference',     value: 'any',       Icon: Wind },
+  { label: 'Always Sunny',  value: 'warm', Icon: Sun },
+  { label: 'Crisp & Snow',  value: 'cold', Icon: Snowflake },
+  { label: 'Mild Seasons',  value: 'mild', Icon: Cloud },
+  { label: 'Rainy Days',    value: 'any',  Icon: Wind },
 ]
 
-function SectionLabel({ number, children }) {
-  return (
-    <p className="text-sm font-semibold text-[#37352f] mb-2 mt-12 first:mt-0">
-      <span className="text-[#787774] mr-1.5">{number}.</span>{children}
-    </p>
-  )
-}
-
-export default function Q8Priorities() {
-  const { workHours, setWorkHours, interests, setInterests, greekLife, setGreekLife, weatherPref, setWeatherPref, goNext } = useSurveyStore()
+export default function Q9Priorities() {
+  const {
+    workHours, setWorkHours,
+    interests, setInterests,
+    greekLife, setGreekLife,
+    weatherPref, setWeatherPref,
+    goNext,
+  } = useSurveyStore()
 
   const handleNext = () => {
-    // Read survey state at call time — avoids subscribing the component to fields
-    // that are only needed for the one-time log call, preventing unnecessary re-renders.
     const {
       schools, major, residency, isInState, incomeBracket,
       goals, alumniData, financialAidOffers, studentRatings,
       workHours: wh, interests: int, greekLife: gl, weatherPref: wp,
       comparisonResult,
     } = useSurveyStore.getState()
-    // Persist all Q1–Q9 inputs + NPV result to question_data (non-blocking —
-    // navigation is not gated on this write, but errors are logged for visibility).
     logQuestionData(
-      {
-        schools, major, residency, isInState, incomeBracket,
-        goals, alumniData, financialAidOffers, studentRatings,
-        workHours: wh, interests: int, greekLife: gl, weatherPref: wp,
-      },
+      { schools, major, residency, isInState, incomeBracket, goals, alumniData, financialAidOffers, studentRatings, workHours: wh, interests: int, greekLife: gl, weatherPref: wp },
       comparisonResult
     ).then(({ error }) => {
       if (error) console.error('[PathWise] question_data save failed:', error.message)
@@ -62,93 +53,245 @@ export default function Q8Priorities() {
 
   return (
     <QuestionCard
-      question="What are your priorities?"
+      question={
+        <>
+          WHAT ARE YOUR{' '}
+          <span style={{ color: '#c4b5fd' }}>PRIORITIES?</span>
+        </>
+      }
+      headingStyle={{
+        fontSize: 'clamp(2.5rem, 7vw, 5.5rem)',
+        letterSpacing: '-0.04em',
+        fontWeight: 900,
+        textTransform: 'uppercase',
+        lineHeight: 0.92,
+        marginBottom: '1.5rem',
+      }}
       subtitle="Help us understand what matters most to you outside the classroom."
       onNext={handleNext}
       canProgress={!!workHours}
     >
-      {/* 1) Work hours */}
-      <SectionLabel number={1}>How many hours are you willing to work per week?</SectionLabel>
-      <div className="flex flex-col gap-2">
-        {WORK_HOURS.map(({ label, value }) => {
-          const selected = workHours === value
-          return (
-            <motion.button
-              key={value}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setWorkHours(value)}
-              className={`flex items-center justify-between px-5 py-3.5 rounded-lg text-sm font-medium border transition-colors duration-150
-                ${selected
-                  ? 'bg-[#37352f] text-white border-[#37352f]'
-                  : 'bg-white text-[#37352f] border-[#e9e9e7] hover:bg-[#f1f1ef]'
-                }`}
-            >
-              <span>{label}</span>
-              {selected && <span className="text-white/50 text-xs tracking-wide">Selected</span>}
-            </motion.button>
-          )
-        })}
-      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '1rem' }}>
 
-      {/* 2) Interests */}
-      <SectionLabel number={2}>What are your interests?</SectionLabel>
-      <textarea
-        value={interests}
-        onChange={(e) => setInterests(e.target.value)}
-        placeholder="e.g. entrepreneurship, music, outdoor activities, research…"
-        rows={3}
-        maxLength={2000}
-        className="w-full px-4 py-3 rounded-lg border border-[#e9e9e7] bg-white text-sm text-[#37352f] placeholder-[#c4c4c0] resize-none focus:outline-none focus:border-[#37352f] transition-colors duration-150"
-      />
-      {interests.length > 1800 && (
-        <p className="text-xs text-amber-600 mt-1">{2000 - interests.length} characters remaining</p>
-      )}
+        {/* Section 1: Work Hours — full width */}
+        <SectionCard label="Availability" icon={<Clock size={18} style={{ color: '#c4b5fd' }} />}>
+          <h2 style={{ fontSize: '1.375rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '1.25rem', color: '#e7e5e4' }}>
+            How many hours are you willing to work per week?
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', maxWidth: '28rem' }}>
+            {WORK_HOURS.map(({ label, value }) => (
+              <RadioRow
+                key={value}
+                label={label}
+                selected={workHours === value}
+                onClick={() => setWorkHours(value)}
+              />
+            ))}
+          </div>
+        </SectionCard>
 
-      {/* 3) Greek life */}
-      <SectionLabel number={3}>Is Greek life important to you?</SectionLabel>
-      <div className="flex flex-col gap-2">
-        {GREEK_LIFE_OPTIONS.map(({ label, value }) => {
-          const selected = greekLife === value
-          return (
-            <motion.button
-              key={value}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setGreekLife(value)}
-              className={`flex items-center justify-between px-5 py-3.5 rounded-lg text-sm font-medium border transition-colors duration-150
-                ${selected
-                  ? 'bg-[#37352f] text-white border-[#37352f]'
-                  : 'bg-white text-[#37352f] border-[#e9e9e7] hover:bg-[#f1f1ef]'
-                }`}
-            >
-              <span>{label}</span>
-              {selected && <span className="text-white/50 text-xs tracking-wide">Selected</span>}
-            </motion.button>
-          )
-        })}
-      </div>
+        {/* Sections 2 + 3: two columns */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
 
-      {/* 4) Weather */}
-      <SectionLabel number={4}>What weather do you enjoy?</SectionLabel>
-      <div className="grid grid-cols-2 gap-2">
-        {WEATHER_OPTIONS.map(({ label, value, Icon }) => {
-          const selected = weatherPref === value
-          return (
-            <motion.button
-              key={value}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setWeatherPref(value)}
-              className={`flex items-center gap-3 px-4 py-3.5 rounded-lg text-sm font-medium border transition-colors duration-150
-                ${selected
-                  ? 'bg-[#37352f] text-white border-[#37352f]'
-                  : 'bg-white text-[#37352f] border-[#e9e9e7] hover:bg-[#f1f1ef]'
-                }`}
-            >
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              <span>{label}</span>
-            </motion.button>
-          )
-        })}
+          {/* Section 2: Interests */}
+          <SectionCard label="Interests">
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '1.25rem', color: '#e7e5e4' }}>
+              What are your interests?
+            </h2>
+            <textarea
+              value={interests}
+              onChange={(e) => setInterests(e.target.value)}
+              placeholder="Start typing your passions..."
+              rows={5}
+              maxLength={2000}
+              style={{
+                width: '100%',
+                backgroundColor: '#000000',
+                border: '1px solid rgba(72,72,72,0.15)',
+                borderRadius: '0.375rem',
+                padding: '1rem 1.25rem',
+                color: '#e7e5e4',
+                fontSize: '0.9375rem',
+                resize: 'none',
+                outline: 'none',
+                lineHeight: 1.6,
+              }}
+              onFocus={(e) => { e.target.style.boxShadow = '0 0 0 1px rgba(196,181,253,0.3)' }}
+              onBlur={(e) => { e.target.style.boxShadow = 'none' }}
+            />
+            {interests.length > 1800 && (
+              <p style={{ fontSize: '0.75rem', color: '#ec7c8a', marginTop: '0.375rem' }}>
+                {2000 - interests.length} characters remaining
+              </p>
+            )}
+          </SectionCard>
+
+          {/* Section 3: Greek Life */}
+          <SectionCard label="Social">
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '1.25rem', color: '#e7e5e4' }}>
+              Is Greek life important to you?
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+              {GREEK_LIFE_OPTIONS.map(({ label, value }) => (
+                <RadioRow
+                  key={value}
+                  label={label}
+                  selected={greekLife === value}
+                  onClick={() => setGreekLife(value)}
+                />
+              ))}
+            </div>
+          </SectionCard>
+        </div>
+
+        {/* Section 4: Weather — full width */}
+        <SectionCard label="Atmosphere">
+          <h2 style={{ fontSize: '1.375rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '1.5rem', color: '#e7e5e4' }}>
+            What weather do you enjoy?
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+            {WEATHER_OPTIONS.map(({ label, value, Icon }) => (
+              <WeatherCard
+                key={value}
+                label={label}
+                Icon={Icon}
+                selected={weatherPref === value}
+                onClick={() => setWeatherPref(value)}
+              />
+            ))}
+          </div>
+        </SectionCard>
+
       </div>
     </QuestionCard>
+  )
+}
+
+function SectionCard({ label, icon, children }) {
+  return (
+    <div
+      style={{
+        backgroundColor: '#131313',
+        borderRadius: '0.75rem',
+        padding: '2rem',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+        {icon}
+        <span
+          style={{
+            fontSize: '0.6875rem',
+            fontWeight: 700,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: '#c4b5fd',
+          }}
+        >
+          {label}
+        </span>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function RadioRow({ label, selected, onClick }) {
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <motion.button
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: '100%',
+        textAlign: 'left',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '1rem 1.25rem',
+        borderRadius: '0.375rem',
+        background: selected
+          ? 'linear-gradient(135deg, #ccbeff 0%, #4a3d7c 100%)'
+          : hovered ? '#252626' : '#1f2020',
+        border: selected ? 'none' : '1px solid rgba(72,72,72,0.15)',
+        cursor: 'pointer',
+        transition: 'background 0.15s ease',
+      }}
+    >
+      <span
+        style={{
+          fontSize: '0.9375rem',
+          fontWeight: selected ? 700 : 500,
+          color: selected ? '#433675' : '#e7e5e4',
+        }}
+      >
+        {label}
+      </span>
+      <div
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: '50%',
+          border: selected ? '2px solid #433675' : '2px solid rgba(72,72,72,0.4)',
+          backgroundColor: selected ? '#433675' : 'transparent',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        {selected && (
+          <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#c4b5fd' }} />
+        )}
+      </div>
+    </motion.button>
+  )
+}
+
+function WeatherCard({ label, Icon, selected, onClick }) {
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <motion.button
+      whileTap={{ scale: 0.96 }}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '0.75rem',
+        padding: '1.75rem 1rem',
+        borderRadius: '0.5rem',
+        background: selected
+          ? 'linear-gradient(135deg, #ccbeff 0%, #4a3d7c 100%)'
+          : hovered ? '#252626' : '#1f2020',
+        border: selected ? 'none' : '1px solid rgba(72,72,72,0.15)',
+        cursor: 'pointer',
+        transition: 'background 0.15s ease',
+      }}
+    >
+      <Icon
+        size={28}
+        style={{ color: selected ? '#433675' : hovered ? '#c4b5fd' : '#acabaa', transition: 'color 0.15s ease' }}
+      />
+      <span
+        style={{
+          fontSize: '0.6875rem',
+          fontWeight: 700,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          color: selected ? '#433675' : '#acabaa',
+        }}
+      >
+        {label}
+      </span>
+    </motion.button>
   )
 }

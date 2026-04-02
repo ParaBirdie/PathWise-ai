@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Plus } from 'lucide-react'
+import { Search, X, ShieldCheck, BadgeCheck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSurveyStore } from '../../store/surveyStore'
 import QuestionCard from './QuestionCard'
@@ -59,7 +59,6 @@ export default function Q1Schools() {
   const addSchool = (name) => {
     const trimmed = name.trim()
     if (!trimmed || schools.includes(trimmed) || schools.length >= 4) return
-    // Only accept names from the known-good allowlist to prevent arbitrary input
     if (!ALL_UNIVERSITIES.includes(trimmed)) return
     setSchools([...schools, trimmed])
     setInput('')
@@ -71,91 +70,178 @@ export default function Q1Schools() {
     if (e.key === 'Enter') addSchool(input)
   }
 
-  const suggestions = input.length > 0
-    ? ALL_UNIVERSITIES.filter(
-        (s) => !schools.includes(s) && s.toLowerCase().includes(input.toLowerCase())
-      ).slice(0, 8)
+  const available = ALL_UNIVERSITIES.filter((s) => !schools.includes(s))
+  const suggestions = schools.length < 4
+    ? (input.length > 0
+        ? available.filter((s) => s.toLowerCase().includes(input.toLowerCase())).slice(0, 6)
+        : available.slice(0, 3))
     : []
 
   return (
     <QuestionCard
       question="Which universities did you get an offer from?"
-      subtitle="Add up to 4 schools you're considering. Press Enter or click + to add."
+      subtitle="Add up to 4 schools you're considering. This helps us tailor your financial roadmap."
       onNext={goNext}
       canProgress={schools.length >= 1}
     >
-      {/* Tag list */}
-      <div className="flex flex-wrap gap-3 min-h-[2.5rem] mb-5">
-        <AnimatePresence>
-          {schools.map((school) => (
-            <motion.span
-              key={school}
-              initial={{ scale: 0.85, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.85, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-md bg-[#37352f] text-white text-sm font-medium"
-            >
-              {school}
-              <button
-                onClick={() => removeSchool(school)}
-                className="flex items-center justify-center w-4 h-4 rounded-full bg-white/15 hover:bg-white/25 transition-colors"
-              >
-                <X className="w-2.5 h-2.5" />
-              </button>
-            </motion.span>
-          ))}
-        </AnimatePresence>
-        {schools.length === 0 && (
-          <span className="text-sm text-[#c4c4c0] self-center">No schools added yet</span>
-        )}
-      </div>
-
-      {/* Input */}
-      {schools.length < 4 && (
-        <div className="relative">
-          <div className="flex gap-2">
+      <div className="space-y-3">
+        {/* Search box + tags container */}
+        <div
+          style={{
+            backgroundColor: '#131313',
+            border: '1px solid rgba(72,72,72,0.3)',
+            borderRadius: '0.75rem',
+            padding: '0.5rem',
+          }}
+        >
+          {/* Search input row */}
+          <div className="flex items-center" style={{ padding: '0.25rem 0.75rem' }}>
+            <Search size={18} style={{ color: '#acabaa', marginRight: '0.75rem', flexShrink: 0 }} />
             <input
+              autoFocus
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type a school name..."
+              placeholder="Search for a university..."
               maxLength={120}
-              className="flex-1 px-4 py-2.5 rounded-lg bg-white border border-[#e9e9e7] text-sm text-[#37352f] placeholder:text-[#c4c4c0] outline-none focus:ring-2 focus:ring-[#37352f]/10 focus:border-[#37352f]/40 transition-all"
+              className="flex-1 bg-transparent outline-none"
+              style={{
+                fontSize: '1.0625rem',
+                color: '#e7e5e4',
+                padding: '0.75rem 0',
+              }}
             />
-            <button
-              onClick={() => addSchool(input)}
-              disabled={!input.trim()}
-              className="px-4 py-2.5 rounded-lg bg-white border border-[#e9e9e7] hover:bg-[#f1f1ef] disabled:opacity-30 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
           </div>
 
-          {/* Autocomplete suggestions */}
+          {/* Selected tags */}
           <AnimatePresence>
-            {suggestions.length > 0 && (
+            {schools.length > 0 && (
               <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                className="absolute top-full mt-1 left-0 right-0 bg-white border border-[#e9e9e7] rounded-lg shadow-md z-10 overflow-hidden"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex flex-wrap gap-2"
+                style={{ padding: '0.25rem 0.75rem 0.5rem' }}
               >
-                {suggestions.map((s) => (
-                  <button
-                    key={s}
-                    onMouseDown={() => addSchool(s)}
-                    className="w-full text-left px-4 py-2.5 text-sm text-[#37352f] hover:bg-[#f1f1ef] transition-colors border-b border-[#e9e9e7] last:border-0"
+                {schools.map((school) => (
+                  <motion.span
+                    key={school}
+                    initial={{ scale: 0.85, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.85, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                    className="flex items-center gap-2 text-sm font-medium"
+                    style={{
+                      background: 'rgba(74,61,124,0.3)',
+                      border: '1px solid rgba(196,181,253,0.2)',
+                      color: '#e7deff',
+                      padding: '0.375rem 1rem',
+                      borderRadius: '9999px',
+                    }}
                   >
-                    {s}
-                  </button>
+                    {school}
+                    <button
+                      onClick={() => removeSchool(school)}
+                      className="flex items-center justify-center transition-colors"
+                      style={{ color: '#b6a7ee' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = '#b6a7ee' }}
+                    >
+                      <X size={13} />
+                    </button>
+                  </motion.span>
                 ))}
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-      )}
+
+        {/* Dropdown suggestions */}
+        <AnimatePresence>
+          {suggestions.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              style={{
+                backgroundColor: 'rgba(25,26,26,0.9)',
+                backdropFilter: 'blur(24px)',
+                border: '1px solid rgba(72,72,72,0.15)',
+                borderRadius: '0.75rem',
+                boxShadow: '0 25px 50px rgba(0,0,0,0.6)',
+                overflow: 'hidden',
+              }}
+            >
+              <ul style={{ padding: '0.5rem 0' }}>
+                {suggestions.map((s) => (
+                  <li
+                    key={s}
+                    onMouseDown={() => addSchool(s)}
+                    className="flex items-center justify-between cursor-pointer group"
+                    style={{ padding: '1rem 1.5rem' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#252626' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                  >
+                    <span className="font-medium" style={{ color: '#e7e5e4' }}>{s}</span>
+                    <span
+                      className="uppercase font-medium transition-colors"
+                      style={{ fontSize: '0.6875rem', letterSpacing: '0.1em', color: '#767575' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = '#c4b5fd' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = '#767575' }}
+                    >
+                      Select
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Info cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ marginTop: '4rem', opacity: 0.45 }}>
+        <div
+          style={{
+            padding: '1.5rem',
+            backgroundColor: '#131313',
+            border: '1px solid rgba(72,72,72,0.08)',
+            borderRadius: '0.75rem',
+          }}
+        >
+          <BadgeCheck size={20} style={{ color: '#c4b5fd', marginBottom: '1rem' }} />
+          <h3
+            className="font-bold uppercase"
+            style={{ fontSize: '0.6875rem', letterSpacing: '0.1em', color: '#e7e5e4', marginBottom: '0.5rem' }}
+          >
+            Verified Institutions
+          </h3>
+          <p style={{ fontSize: '0.75rem', color: '#acabaa', lineHeight: '1.6' }}>
+            We support over 2,500 globally accredited universities across 45 countries.
+          </p>
+        </div>
+        <div
+          style={{
+            padding: '1.5rem',
+            backgroundColor: '#131313',
+            border: '1px solid rgba(72,72,72,0.08)',
+            borderRadius: '0.75rem',
+          }}
+        >
+          <ShieldCheck size={20} style={{ color: '#c4b5fd', marginBottom: '1rem' }} />
+          <h3
+            className="font-bold uppercase"
+            style={{ fontSize: '0.6875rem', letterSpacing: '0.1em', color: '#e7e5e4', marginBottom: '0.5rem' }}
+          >
+            Secure Selection
+          </h3>
+          <p style={{ fontSize: '0.75rem', color: '#acabaa', lineHeight: '1.6' }}>
+            Your choices are private and used only for personalized financial modeling.
+          </p>
+        </div>
+      </div>
     </QuestionCard>
   )
 }

@@ -9,15 +9,27 @@ import { SCHOOL_COLORS } from '../../lib/economicData'
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="glass rounded-xl px-4 py-3 shadow-xl text-xs min-w-[160px]">
-      <p className="font-semibold text-[#1d1d1f] mb-2">Year {label}</p>
+    <div
+      style={{
+        backgroundColor: '#131313',
+        border: '1px solid rgba(72,72,72,0.3)',
+        borderRadius: '0.625rem',
+        padding: '0.75rem 1rem',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        fontSize: '0.75rem',
+        minWidth: '10rem',
+      }}
+    >
+      <p style={{ fontWeight: 700, color: '#e7e5e4', marginBottom: '0.5rem', letterSpacing: '0.04em' }}>
+        Year {label}
+      </p>
       {payload.map((p) => (
-        <div key={p.dataKey} className="flex items-center justify-between gap-3 mb-1">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
-            <span className="text-[#6e6e73]">{p.name}</span>
+        <div key={p.dataKey} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '0.25rem' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: p.color, display: 'inline-block' }} />
+            <span style={{ color: '#acabaa' }}>{p.name}</span>
           </span>
-          <span className={`font-medium ${p.value >= 0 ? 'text-[#1d1d1f]' : 'text-red-500'}`}>
+          <span style={{ fontWeight: 600, color: p.value >= 0 ? '#e7e5e4' : '#ec7c8a' }}>
             {formatCurrency(p.value, true)}
           </span>
         </div>
@@ -41,33 +53,44 @@ export default function WealthChart({ results }) {
   }, [results])
 
   return (
-    <div className="glass rounded-3xl p-6 shadow-xl shadow-black/[0.04]">
-      <h3 className="text-base font-semibold text-[#1d1d1f] mb-1">Cumulative Wealth Trajectory</h3>
-      <p className="text-xs text-[#6e6e73] mb-6">Discounted at 5% · includes college costs + foregone wages</p>
+    <div
+      style={{
+        backgroundColor: '#131313',
+        borderRadius: '0.875rem',
+        padding: '1.75rem',
+        border: '1px solid rgba(72,72,72,0.15)',
+      }}
+    >
+      <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#e7e5e4', marginBottom: '0.25rem', letterSpacing: '-0.02em' }}>
+        Cumulative Wealth Trajectory
+      </h3>
+      <p style={{ fontSize: '0.75rem', color: '#767575', marginBottom: '1.5rem', letterSpacing: '0.03em' }}>
+        Discounted at 5% · includes college costs + foregone wages
+      </p>
 
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(72,72,72,0.15)" />
           <XAxis
             dataKey="year"
-            tick={{ fontSize: 11, fill: '#aeaeb2' }}
+            tick={{ fontSize: 11, fill: '#767575' }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v) => v === 1 ? 'Start' : v === 5 ? 'Yr 5' : v === 14 ? 'Yr 14' : v === 24 ? 'Yr 24' : v === 44 ? 'Yr 44' : ''}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: '#aeaeb2' }}
+            tick={{ fontSize: 11, fill: '#767575' }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v) => formatCurrency(v, true)}
             width={60}
           />
           <Tooltip content={<CustomTooltip />} />
-          <ReferenceLine y={0} stroke="rgba(0,0,0,0.1)" strokeDasharray="4 4" />
+          <ReferenceLine y={0} stroke="rgba(72,72,72,0.4)" strokeDasharray="4 4" />
           <Legend
             iconType="circle"
             iconSize={8}
-            wrapperStyle={{ fontSize: '12px', paddingTop: '12px', color: '#6e6e73' }}
+            wrapperStyle={{ fontSize: '12px', paddingTop: '12px', color: '#acabaa' }}
           />
           {results.map((r, i) => (
             <Line

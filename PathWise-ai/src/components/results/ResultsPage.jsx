@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { RefreshCw, TrendingUp } from 'lucide-react'
+import { RefreshCw, TrendingUp, Download } from 'lucide-react'
 import { useSurveyStore } from '../../store/surveyStore'
 import { formatCurrency } from '../../lib/npvEngine'
 import { PRIMARY_GOALS, SCHOOL_COLORS } from '../../lib/economicData'
@@ -67,8 +67,8 @@ export default function ResultsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
-        <p className="text-sm text-[#6e6e73]">Loading your results…</p>
+      <div style={{ minHeight: '100vh', backgroundColor: '#0e0e0e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ fontSize: '0.875rem', color: '#acabaa' }}>Loading your results…</p>
       </div>
     )
   }
@@ -79,119 +79,246 @@ export default function ResultsPage() {
   const dividendPositive = lifecycleDividend >= 0
 
   return (
-    <div className="relative min-h-screen bg-[#f5f5f7]">
-      {/* Print stylesheet — only applied when window.print() is called */}
+    <div style={{ minHeight: '100vh', backgroundColor: '#0e0e0e', color: '#e7e5e4', position: 'relative' }}>
+      {/* Print stylesheet */}
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          body { background: white !important; }
-          .glass, .glass-dark {
-            background: white !important;
-            border: 1px solid #e5e5ea !important;
-            box-shadow: none !important;
-            backdrop-filter: none !important;
-          }
+          body { background: white !important; color: #1d1d1f !important; }
           @page { margin: 1.5cm; }
         }
       `}</style>
-      {/* Background orbs */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-blue-100/40 blur-3xl" />
-        <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full bg-purple-100/30 blur-3xl" />
+
+      {/* Ambient glow */}
+      <div style={{ position: 'fixed', top: 0, right: 0, pointerEvents: 'none', zIndex: 0, opacity: 0.2, padding: '2rem' }}>
+        <div style={{ width: '600px', height: '600px', backgroundColor: 'rgba(196,181,253,0.1)', filter: 'blur(140px)', borderRadius: '9999px' }} />
+      </div>
+      <div style={{ position: 'fixed', bottom: 0, left: 0, pointerEvents: 'none', zIndex: 0, opacity: 0.1 }}>
+        <div style={{ width: '400px', height: '400px', backgroundColor: 'rgba(196,181,253,0.1)', filter: 'blur(100px)', borderRadius: '9999px' }} />
       </div>
 
-      {/* Floating download/share button — always visible, fixed to viewport */}
+      {/* Top nav */}
+      <nav
+        className="no-print"
+        style={{
+          position: 'fixed', top: 0, width: '100%', height: '4rem',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 2rem', backgroundColor: 'rgba(14,14,14,0.9)',
+          backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(72,72,72,0.15)',
+          zIndex: 50,
+        }}
+      >
+        <div style={{ fontSize: '1.125rem', fontWeight: 700, letterSpacing: '-0.03em', textTransform: 'uppercase', color: '#c4b5fd' }}>
+          MONOLITH
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#acabaa' }}>
+            YOUR ANALYSIS
+          </span>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#c4b5fd' }} />
+        </div>
+      </nav>
+
+      {/* Floating download/share button */}
       <DownloadShareMenu
         comparisonResult={comparisonResult}
         major={major}
         goals={goals}
       />
 
-      <div className="relative z-10 max-w-2xl mx-auto px-4 py-16 pb-24">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={stagger.container}
-        >
-          {/* Header */}
-          <motion.div variants={stagger.item} className="mb-8 text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 shadow-xl shadow-blue-500/25 mb-4">
-              <TrendingUp className="w-6 h-6 text-white" />
+      {/* Main content */}
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: '64rem', margin: '0 auto', padding: '7rem 1.5rem 8rem' }}>
+        <motion.div initial="hidden" animate="visible" variants={stagger.container}>
+
+          {/* ── Header ── */}
+          <motion.div variants={stagger.item} style={{ marginBottom: '3rem', textAlign: 'center' }}>
+            <div
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: '3.5rem', height: '3.5rem', borderRadius: '1rem',
+                background: 'linear-gradient(135deg, #ccbeff 0%, #4a3d7c 100%)',
+                marginBottom: '1.25rem',
+                boxShadow: '0 8px 32px rgba(196,181,253,0.25)',
+              }}
+            >
+              <TrendingUp size={24} style={{ color: '#433675' }} />
             </div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-[#1d1d1f] tracking-tight mb-2">
-              Your PathWise Analysis
+            <h1
+              style={{
+                fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900,
+                letterSpacing: '-0.04em', color: '#e7e5e4', marginBottom: '0.75rem',
+                textTransform: 'uppercase', lineHeight: 0.95,
+              }}
+            >
+              Your PathWise{' '}
+              <span style={{ color: '#c4b5fd' }}>Analysis</span>
             </h1>
-            <p className="text-[#6e6e73] text-sm">
-              {major} · {goals.map((g) => GOAL_LABEL[g] ?? g).join(' · ')} · 40-year projection
+            <p style={{ color: '#acabaa', fontSize: '0.875rem', letterSpacing: '0.05em' }}>
+              {major}
+              {goals.length > 0 && (
+                <> · {goals.map((g) => GOAL_LABEL[g] ?? g).join(' · ')}</>
+              )}
+              {' · 40-year projection'}
             </p>
           </motion.div>
 
-          {/* Hero: Life-Cycle Dividend */}
-          <motion.div variants={stagger.item} className="mb-6">
-            <div className="glass rounded-3xl p-8 text-center shadow-xl shadow-black/[0.04]">
-              <p className="text-xs font-medium text-[#aeaeb2] uppercase tracking-widest mb-2">
+          {/* ── Life-Cycle Dividend Hero ── */}
+          <motion.div variants={stagger.item} style={{ marginBottom: '1.5rem' }}>
+            <div
+              style={{
+                backgroundColor: '#131313',
+                borderRadius: '1rem',
+                padding: '2.5rem',
+                textAlign: 'center',
+                border: '1px solid rgba(72,72,72,0.15)',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Subtle gradient overlay */}
+              <div
+                style={{
+                  position: 'absolute', inset: 0, borderRadius: '1rem',
+                  background: 'radial-gradient(ellipse at 50% 0%, rgba(196,181,253,0.06) 0%, transparent 70%)',
+                  pointerEvents: 'none',
+                }}
+              />
+              <p
+                style={{
+                  fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.15em',
+                  textTransform: 'uppercase', color: '#c4b5fd', marginBottom: '0.75rem',
+                }}
+              >
                 Life-Cycle Dividend
               </p>
-              <p className={`text-5xl sm:text-6xl font-bold tracking-tight mb-2 ${
-                dividendPositive ? 'text-[#1d1d1f]' : 'text-red-500'
-              }`}>
+              <p
+                style={{
+                  fontSize: 'clamp(3rem, 8vw, 5rem)', fontWeight: 900, letterSpacing: '-0.04em',
+                  lineHeight: 1, marginBottom: '0.75rem',
+                  color: dividendPositive ? '#e7e5e4' : '#ec7c8a',
+                }}
+              >
                 {dividendPositive ? '+' : ''}{formatCurrency(lifecycleDividend, true)}
               </p>
-              <p className="text-sm text-[#6e6e73]">
+              <p style={{ fontSize: '0.9375rem', color: '#acabaa', maxWidth: '32rem', margin: '0 auto' }}>
                 Net wealth advantage of{' '}
-                <span className="font-semibold text-[#1d1d1f]">{best.school}</span>{' '}
+                <span style={{ color: '#e7e5e4', fontWeight: 600 }}>{best.school}</span>{' '}
                 over your next-best option (NPV-discounted, 40 years)
               </p>
 
-              {/* Mini stats row */}
-              <div className="mt-6 grid grid-cols-3 gap-4">
+              {/* Mini stats */}
+              <div
+                style={{
+                  marginTop: '2rem',
+                  display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '1rem',
+                  paddingTop: '1.75rem',
+                  borderTop: '1px solid rgba(72,72,72,0.15)',
+                }}
+              >
                 {[
                   { label: 'Best NPV', value: formatCurrency(best.npv, true) },
                   { label: 'Entry Wage', value: formatCurrency(best.entryWage, true) },
                   { label: 'Yr 10 Wage', value: formatCurrency(best.year10Wage, true) },
                 ].map(({ label, value }) => (
                   <div key={label}>
-                    <p className="text-xs text-[#aeaeb2] mb-0.5">{label}</p>
-                    <p className="text-base font-semibold text-[#1d1d1f]">{value}</p>
+                    <p style={{ fontSize: '0.6875rem', color: '#767575', marginBottom: '0.25rem', letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 600 }}>
+                      {label}
+                    </p>
+                    <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#e7e5e4', letterSpacing: '-0.02em' }}>
+                      {value}
+                    </p>
                   </div>
                 ))}
               </div>
             </div>
           </motion.div>
 
-          {/* Chart */}
-          <motion.div variants={stagger.item} className="mb-6">
+          {/* ── Wealth Trajectory Chart ── */}
+          <motion.div variants={stagger.item} style={{ marginBottom: '1.5rem' }}>
             <WealthChart results={results} />
           </motion.div>
 
-          {/* School cards */}
+          {/* ── School Cards ── */}
+          <motion.div variants={stagger.item} style={{ marginBottom: '0.75rem' }}>
+            <p
+              style={{
+                fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.15em',
+                textTransform: 'uppercase', color: '#c4b5fd', marginBottom: '1rem',
+              }}
+            >
+              School Rankings
+            </p>
+          </motion.div>
+
           {results.map((result, i) => (
-            <motion.div key={result.school} variants={stagger.item} className="mb-4">
+            <motion.div key={result.school} variants={stagger.item} style={{ marginBottom: '1rem' }}>
               <SchoolCard result={result} rank={i} color={SCHOOL_COLORS[i % SCHOOL_COLORS.length]} />
             </motion.div>
           ))}
 
-          {/* Methodology note */}
-          <motion.div variants={stagger.item} className="glass-dark rounded-2xl p-5 mt-4">
-            <p className="text-xs text-[#6e6e73] leading-relaxed">
-              <strong className="text-[#1d1d1f]">Methodology:</strong> Earnings modeled via the Quartic Mincerian equation
-              (Murphy & Welch, 1990). NPV uses a 5% annual discount rate, 40-year career horizon, and includes
+          {/* ── Methodology ── */}
+          <motion.div
+            variants={stagger.item}
+            style={{
+              backgroundColor: '#131313',
+              borderRadius: '0.75rem',
+              padding: '1.5rem',
+              border: '1px solid rgba(72,72,72,0.12)',
+              marginTop: '0.5rem',
+            }}
+          >
+            <p style={{ fontSize: '0.75rem', color: '#767575', lineHeight: 1.7 }}>
+              <strong style={{ color: '#acabaa' }}>Methodology:</strong>{' '}
+              Earnings modeled via the Quartic Mincerian equation (Murphy &amp; Welch, 1990).
+              NPV uses a 5% annual discount rate, 40-year career horizon, and includes
               $35k/yr opportunity cost during college. Aid figures reflect actual offer letter amounts where provided;
               otherwise estimated from published FAFSA EFC curves by income bracket and school tier.
               Results are educational simulations — consult a financial advisor for personalized guidance.
             </p>
           </motion.div>
 
-          {/* Reset */}
-          <motion.div variants={stagger.item} className="mt-8 text-center no-print">
+          {/* ── Download / Share (inline, bottom of page) ── */}
+          <motion.div
+            variants={stagger.item}
+            className="no-print"
+            style={{ marginTop: '2.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}
+          >
+            <button
+              onClick={() => window.print()}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.875rem 2rem', borderRadius: '0.5rem',
+                background: 'linear-gradient(135deg, #ccbeff 0%, #4a3d7c 100%)',
+                color: '#433675', fontWeight: 700, fontSize: '0.75rem',
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                border: 'none', cursor: 'pointer',
+                boxShadow: '0 8px 24px rgba(196,181,253,0.2)',
+              }}
+            >
+              <Download size={15} />
+              Download as PDF
+            </button>
+
             <button
               onClick={reset}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-black/10 text-sm text-[#6e6e73] hover:text-[#1d1d1f] hover:border-black/20 transition-all"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.875rem 2rem', borderRadius: '0.5rem',
+                backgroundColor: 'transparent',
+                border: '1px solid rgba(72,72,72,0.3)',
+                color: '#acabaa', fontWeight: 600, fontSize: '0.75rem',
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(196,181,253,0.3)'; e.currentTarget.style.color = '#e7e5e4' }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(72,72,72,0.3)'; e.currentTarget.style.color = '#acabaa' }}
             >
-              <RefreshCw className="w-3.5 h-3.5" />
-              Start over
+              <RefreshCw size={13} />
+              Start Over
             </button>
           </motion.div>
+
         </motion.div>
       </div>
     </div>

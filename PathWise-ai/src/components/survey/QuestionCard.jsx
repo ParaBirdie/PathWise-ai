@@ -2,13 +2,21 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { useSurveyStore } from '../../store/surveyStore'
 
-export default function QuestionCard({ question, subtitle, children, onNext, canProgress, nextLabel = 'Next' }) {
+export default function QuestionCard({ question, subtitle, eyebrow, children, onNext, canProgress, nextLabel = 'Next' }) {
   const goBack = useSurveyStore((s) => s.goBack)
 
   return (
     <div className="w-full">
       {/* Question header */}
       <header style={{ marginBottom: '2.5rem' }}>
+        {eyebrow && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <span style={{ color: '#c4b5fd', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+              {eyebrow}
+            </span>
+            <div style={{ height: 1, flexGrow: 1, backgroundColor: 'rgba(72,72,72,0.2)' }} />
+          </div>
+        )}
         <h1
           className="font-bold leading-tight"
           style={{ fontSize: 'clamp(2rem, 5vw, 3.75rem)', letterSpacing: '-0.02em', color: '#e7e5e4', marginBottom: '1rem' }}

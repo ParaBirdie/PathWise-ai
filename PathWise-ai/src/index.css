@@ -7,13 +7,18 @@
 }
 
 body {
-  background-color: #f7f7f5;
+  background-color: #0e0e0e;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   overflow-x: hidden;
-  color: #37352f;
+  color: #e7e5e4;
+}
+
+/* Dark input placeholder */
+input::placeholder {
+  color: #484848;
 }
 
 /* Notion-style card */

@@ -79,6 +79,7 @@ export default function Q7FinancialAid() {
         maps.inStateTuitionMap,
         maps.outStateTuitionMap,
         maps.locationStateMap,
+        maps.prestigeMultiplierMap ?? {},
       )
       if (coeffMap) setMajorCoefficients(coeffMap)
 

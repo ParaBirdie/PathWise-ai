@@ -2,82 +2,177 @@
  * Mincerian career trajectory data.
  * Quartic Mincer equation: log(y) = log(y0) + r*S + β1*X + β2*X² + β3*X³ + β4*X⁴
  *
- * Coefficients sourced from Mincer (1974), Murphy & Welch (1990), and
- * calibrated against BLS Occupational Employment Statistics + Levels.fyi.
+ * Calibrated against BLS OES, Levels.fyi top-10 firm averages, Glassdoor,
+ * PayScale College Salary Report, AAMC, ABA, and IEEE salary surveys (2024).
  *
- * y0       = baseline wage at 0 experience
- * r        = return to schooling (per year)
- * beta1–4  = quartic experience coefficients
- * employment_rate = field-specific employment probability
- * signal_weight   = fraction of ROI driven by school brand vs. skill (0–1, higher = more signal)
+ * y0  = baseline wage anchoring absolute salary level for the field.
+ *       Per-school differentiation is handled by SCHOOL_PRESTIGE_MULTIPLIER,
+ *       not by different y0 values per tier — tiers share the same y0.
+ * r   = return to one additional year of schooling
+ * β1–4 = quartic experience-earnings profile coefficients
+ * employment_rate = field employment probability (BLS)
+ * signal_weight   = fraction of ROI driven by school brand vs. skill (0–1)
  */
 
 export const MAJOR_COEFFICIENTS = {
+  // Software Engineers. Entry (local baseline ~$68K), Y10 ~$130K, Y20 ~$165K.
+  // Top-10 FAANG avg entry ~$155K is captured by elite prestige_multiplier (1.62-1.75).
   'Computer Science': {
-    y0: 28000, r: 0.14, beta1: 0.082, beta2: -0.0019, beta3: 0.000028, beta4: -0.00000015,
+    y0: 38600, r: 0.14, beta1: 0.082, beta2: -0.0019, beta3: 0.000028, beta4: -0.00000015,
     employment_rate: 0.93, signal_weight: 0.45,
     entry_label: 'Software Engineer I', peak_label: 'Staff Engineer / Director',
   },
+  // EE baseline close to CS but slightly lower due to narrower industry.
   'Electrical Engineering': {
-    y0: 26000, r: 0.13, beta1: 0.078, beta2: -0.0018, beta3: 0.000025, beta4: -0.00000013,
+    y0: 39300, r: 0.13, beta1: 0.078, beta2: -0.0018, beta3: 0.000025, beta4: -0.00000013,
     employment_rate: 0.91, signal_weight: 0.40,
     entry_label: 'EE Associate', peak_label: 'Principal Engineer',
   },
+  // Investment Banking / Finance. Steeper betas reflect IB front-loaded comp growth.
+  // Entry (local) ~$55K broad avg. Elite (1.62-1.75×): GS/JPM analyst ~$170K total comp.
+  // Y10 flagship ~$100K; Y10 elite ~$155K (VP-track). Y20 elite ~$215K.
   'Business / Finance': {
-    y0: 22000, r: 0.11, beta1: 0.068, beta2: -0.0016, beta3: 0.000022, beta4: -0.00000012,
+    y0: 36700, r: 0.11, beta1: 0.095, beta2: -0.0020, beta3: 0.000030, beta4: -0.00000016,
     employment_rate: 0.88, signal_weight: 0.60,
-    entry_label: 'Financial Analyst', peak_label: 'VP / Director',
+    entry_label: 'Financial Analyst / IB Analyst', peak_label: 'VP / Managing Director',
   },
+  // Pre-Med outcome distribution (research associate, resident, attending).
+  // Steeper betas model the residency→attending income inflection at ~Y8-10.
+  // Entry (local) ~$48K; Y10 ~$127K; Y20 ~$223K; Y25 ~$239K (peak). Elite ~+40%.
   'Pre-Medicine / Biology': {
-    y0: 18000, r: 0.10, beta1: 0.045, beta2: -0.0009, beta3: 0.000012, beta4: -0.00000006,
+    y0: 30500, r: 0.12, beta1: 0.140, beta2: -0.0030, beta3: 0.000015, beta4: -0.00000003,
     employment_rate: 0.85, signal_weight: 0.35,
     entry_label: 'Research Associate / Resident', peak_label: 'Attending Physician',
   },
+  // High signal_weight: brand-name degree is the primary career differentiator.
   'Liberal Arts / Humanities': {
-    y0: 16000, r: 0.08, beta1: 0.052, beta2: -0.0012, beta3: 0.000016, beta4: -0.00000008,
+    y0: 35400, r: 0.08, beta1: 0.052, beta2: -0.0012, beta3: 0.000016, beta4: -0.00000008,
     employment_rate: 0.78, signal_weight: 0.70,
     entry_label: 'Associate / Coordinator', peak_label: 'Manager / Director',
   },
+  // Hospital pay scales are credential/experience-based, not prestige-based.
   'Nursing': {
-    y0: 24000, r: 0.09, beta1: 0.065, beta2: -0.0015, beta3: 0.000020, beta4: -0.00000010,
+    y0: 43400, r: 0.09, beta1: 0.065, beta2: -0.0015, beta3: 0.000020, beta4: -0.00000010,
     employment_rate: 0.95, signal_weight: 0.25,
     entry_label: 'Staff Nurse RN', peak_label: 'NP / Nurse Manager',
   },
+  // Teacher pay is district-set; prestige has minimal direct wage impact.
   'Education': {
-    y0: 18000, r: 0.085, beta1: 0.048, beta2: -0.0010, beta3: 0.000013, beta4: -0.00000007,
+    y0: 33600, r: 0.085, beta1: 0.048, beta2: -0.0010, beta3: 0.000013, beta4: -0.00000007,
     employment_rate: 0.87, signal_weight: 0.30,
-    entry_label: 'Teacher', peak_label: 'Principal / Admin',
+    entry_label: 'Teacher', peak_label: 'Principal / Administrator',
   },
   'Psychology': {
-    y0: 15000, r: 0.08, beta1: 0.050, beta2: -0.0011, beta3: 0.000015, beta4: -0.00000008,
+    y0: 38200, r: 0.08, beta1: 0.050, beta2: -0.0011, beta3: 0.000015, beta4: -0.00000008,
     employment_rate: 0.76, signal_weight: 0.55,
     entry_label: 'Counselor / Analyst', peak_label: 'Therapist / Director',
   },
   'Data Science / Statistics': {
-    y0: 27000, r: 0.135, beta1: 0.080, beta2: -0.0018, beta3: 0.000026, beta4: -0.00000014,
+    y0: 42200, r: 0.135, beta1: 0.080, beta2: -0.0018, beta3: 0.000026, beta4: -0.00000014,
     employment_rate: 0.92, signal_weight: 0.42,
     entry_label: 'Data Analyst', peak_label: 'ML Engineer / Head of Data',
   },
+  // Very high signal_weight: Harvard Law vs. regional school gap is enormous.
+  // Entry (local) ~$50K mixed (law clerk, gov, consulting).
+  // Elite (1.62-1.75×): BigLaw Cravath-scale ~$215K entry modeled by prestige.
+  // Y20 local ~$172K; Y20 elite ~$220K.
+  'Pre-Law / Political Science': {
+    y0: 37500, r: 0.10, beta1: 0.115, beta2: -0.0025, beta3: 0.000018, beta4: -0.00000006,
+    employment_rate: 0.80, signal_weight: 0.75,
+    entry_label: 'Law Clerk / Policy Analyst', peak_label: 'Partner / Senior Counsel',
+  },
   'Undecided': {
-    y0: 20000, r: 0.10, beta1: 0.060, beta2: -0.0014, beta3: 0.000018, beta4: -0.00000009,
+    y0: 40100, r: 0.10, beta1: 0.060, beta2: -0.0014, beta3: 0.000018, beta4: -0.00000009,
     employment_rate: 0.82, signal_weight: 0.50,
     entry_label: 'Entry Level', peak_label: 'Mid-Senior Role',
   },
 }
 
 /**
- * University prestige multipliers.
- * Calibrated against PayScale College Salary Report and LinkedIn Economic Graph data.
+ * Tier-level prestige multiplier fallback.
+ * Used only when a school is absent from SCHOOL_PRESTIGE_MULTIPLIER and the
+ * live DB value hasn't been loaded. Prefer SCHOOL_PRESTIGE_MULTIPLIER for
+ * all known schools so each school gets a unique earnings premium.
  */
 export const UNIVERSITY_PRESTIGE = {
-  // Tier 1: Elite (MIT, Stanford, Harvard, etc.)
-  elite: { multiplier: 1.35 },
-  // Tier 2: Strong Research (Top 50 national)
-  research: { multiplier: 1.18 },
-  // Tier 3: Regional / State Flagship
+  elite:    { multiplier: 1.55 },  // mid-range elite fallback
+  research: { multiplier: 1.25 },  // mid-range research fallback
   flagship: { multiplier: 1.08 },
-  // Tier 4: Community / Local
-  local: { multiplier: 1.00 },
+  local:    { multiplier: 1.01 },
+}
+
+/**
+ * Per-school prestige multiplier — static fallback used when Supabase is
+ * unreachable. Mirrors the prestige_multiplier column in university_financials.
+ *
+ * Calibrated from PayScale College Salary Report, LinkedIn Economic Graph,
+ * Glassdoor alumni earnings outcomes, and US News peer-assessment scores (2024).
+ * Range: 1.00 (local/regional baseline) → 1.75 (MIT/Princeton top-tier).
+ */
+export const SCHOOL_PRESTIGE_MULTIPLIER = {
+  // ── Elite Private ──────────────────────────────────────────────────────────
+  'MIT': 1.75, 'Princeton': 1.72, 'Stanford': 1.72, 'Harvard': 1.70, 'Yale': 1.67,
+  'Caltech': 1.62, 'Duke University': 1.63, 'Johns Hopkins University': 1.60,
+  'Northwestern University': 1.60, 'Dartmouth College': 1.58, 'Brown University': 1.56,
+  'Vanderbilt University': 1.57, 'Rice University': 1.55,
+  'Washington University in St. Louis': 1.50, 'Emory University': 1.51,
+  'University of Notre Dame': 1.53, 'Georgetown University': 1.50,
+  'Tufts University': 1.47, 'Boston College': 1.46, 'Wake Forest University': 1.45,
+
+  // ── Research Public ────────────────────────────────────────────────────────
+  'UC Berkeley': 1.38, 'UCLA': 1.37, 'Carnegie Mellon': 1.36,
+  'University of Michigan': 1.36, 'UC San Diego': 1.34,
+  'University of Virginia': 1.35, 'Georgia Tech': 1.33, 'University of Florida': 1.32,
+  'UNC Chapel Hill': 1.32, 'NYU': 1.30,
+  'University of Illinois Urbana-Champaign': 1.30, 'UC Santa Barbara': 1.29,
+  'UC Davis': 1.28, 'UC Irvine': 1.28, 'University of Wisconsin–Madison': 1.28,
+  'UT Austin': 1.28, 'Boston University': 1.27, 'Tulane University': 1.26,
+  'Purdue University': 1.25, 'Villanova University': 1.25,
+  'Case Western Reserve University': 1.25, 'University of Maryland': 1.24,
+  'Rensselaer Polytechnic Institute': 1.24, 'Lehigh University': 1.24,
+  'University of Miami': 1.24, 'Ohio State University': 1.24,
+  'University of Minnesota': 1.23, 'Virginia Tech': 1.23,
+  'University of Washington': 1.23, 'Worcester Polytechnic Institute': 1.23,
+  'Penn State University': 1.22, 'Michigan State University': 1.22,
+  'University of Connecticut': 1.22, 'UMass Amherst': 1.21,
+  'Rutgers University': 1.21, 'Clemson University': 1.21,
+  'Indiana University Bloomington': 1.21, 'Syracuse University': 1.21,
+  'UC Santa Cruz': 1.20, 'George Washington University': 1.20,
+  'University of Colorado Boulder': 1.20, 'Stevens Institute of Technology': 1.20,
+  'University of Denver': 1.19, 'American University': 1.19, 'Fordham University': 1.19,
+  'Arizona State University': 1.18, 'Drexel University': 1.18,
+  'Gonzaga University': 1.18, 'Marquette University': 1.18,
+  'Seton Hall University': 1.18, 'DePaul University': 1.18,
+  'Loyola University Chicago': 1.18,
+
+  // ── Flagship State ─────────────────────────────────────────────────────────
+  'Cal Poly San Luis Obispo': 1.15, 'Florida State University': 1.13,
+  'SUNY Stony Brook': 1.11, 'SUNY Buffalo': 1.10, 'SUNY Binghamton': 1.10,
+  'San Diego State University': 1.10,
+  'San Jose State University': 1.09, 'University of Utah': 1.09,
+  'University of Vermont': 1.08, 'University of Oregon': 1.08,
+  'University of Arizona': 1.08, 'Miami University Ohio': 1.08,
+  'Iowa State University': 1.08, 'University of Iowa': 1.08,
+  'University of Missouri': 1.07, 'University of Tennessee': 1.07,
+  'University of Kentucky': 1.07, 'University of Oklahoma': 1.07,
+  'Louisiana State University': 1.07, 'University of South Carolina': 1.07,
+  'University of Alabama': 1.07, 'Auburn University': 1.07,
+  'Colorado State University': 1.07, 'University of Nebraska–Lincoln': 1.07,
+  'University of Kansas': 1.06, 'Kansas State University': 1.06,
+  'University of Arkansas': 1.06, 'Oklahoma State University': 1.06,
+  'University of Mississippi': 1.05, 'Mississippi State University': 1.05,
+  'Utah State University': 1.05, 'University of Nevada Las Vegas': 1.05,
+  'University of New Mexico': 1.05, 'West Virginia University': 1.05,
+  'University of Wyoming': 1.05,
+
+  // ── Local / Regional ───────────────────────────────────────────────────────
+  'Babson College': 1.08, 'Bryant University': 1.05,
+  'College of the Holy Cross': 1.04, 'CUNY Baruch College': 1.03,
+  'Bentley University': 1.07, 'Providence College': 1.02,
+  'Fairfield University': 1.02, 'Quinnipiac University': 1.01,
+  'Sacred Heart University': 1.01, 'Marist College': 1.01,
+  'Hofstra University': 1.01, 'Roger Williams University': 1.00,
+  'Pace University': 1.00,
 }
 
 export const SCHOOL_TIER_MAP = {

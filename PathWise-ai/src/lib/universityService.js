@@ -17,14 +17,15 @@ import { supabase } from './supabase.js'
 let _cache = null
 
 /**
- * Fetch tier, tuition (private + in/out-of-state), and location maps from
- * `university_financials`.
+ * Fetch tier, tuition (private + in/out-of-state), location, and per-school
+ * prestige_multiplier from `university_financials`.
  * @returns {{
  *   tierMap: Record<string,string>,
  *   tuitionMap: Record<string,number>,
  *   inStateTuitionMap: Record<string,number>,
  *   outStateTuitionMap: Record<string,number>,
- *   locationStateMap: Record<string,string>
+ *   locationStateMap: Record<string,string>,
+ *   prestigeMultiplierMap: Record<string,number>
  * } | null}
  */
 export async function fetchUniversityMaps() {
@@ -33,26 +34,28 @@ export async function fetchUniversityMaps() {
   try {
     const { data, error } = await supabase
       .from('university_financials')
-      .select('school_name, tier, tuition_private, tuition_in_state, tuition_out_state, location_state')
+      .select('school_name, tier, tuition_private, tuition_in_state, tuition_out_state, location_state, prestige_multiplier')
 
     if (error || !data?.length) return null
 
     const tierMap = {}
-    const tuitionMap = {}          // private tuition (for private schools)
-    const inStateTuitionMap = {}   // public in-state tuition
-    const outStateTuitionMap = {}  // public out-of-state tuition
-    const locationStateMap = {}    // school → 2-letter state abbr
+    const tuitionMap = {}           // private tuition (for private schools)
+    const inStateTuitionMap = {}    // public in-state tuition
+    const outStateTuitionMap = {}   // public out-of-state tuition
+    const locationStateMap = {}     // school → 2-letter state abbr
+    const prestigeMultiplierMap = {} // per-school earnings premium multiplier
 
-    data.forEach(({ school_name, tier, tuition_private, tuition_in_state, tuition_out_state, location_state }) => {
+    data.forEach(({ school_name, tier, tuition_private, tuition_in_state, tuition_out_state, location_state, prestige_multiplier }) => {
       if (!school_name) return
       if (tier) tierMap[school_name] = tier
-      if (tuition_private)  tuitionMap[school_name] = tuition_private
-      if (tuition_in_state) inStateTuitionMap[school_name] = tuition_in_state
+      if (tuition_private)   tuitionMap[school_name] = tuition_private
+      if (tuition_in_state)  inStateTuitionMap[school_name] = tuition_in_state
       if (tuition_out_state) outStateTuitionMap[school_name] = tuition_out_state
-      if (location_state)   locationStateMap[school_name] = location_state
+      if (location_state)    locationStateMap[school_name] = location_state
+      if (prestige_multiplier != null) prestigeMultiplierMap[school_name] = Number(prestige_multiplier)
     })
 
-    _cache = { tierMap, tuitionMap, inStateTuitionMap, outStateTuitionMap, locationStateMap }
+    _cache = { tierMap, tuitionMap, inStateTuitionMap, outStateTuitionMap, locationStateMap, prestigeMultiplierMap }
     return _cache
   } catch {
     // Network error or Supabase misconfiguration — graceful fallback to static maps

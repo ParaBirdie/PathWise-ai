@@ -22,7 +22,7 @@
  */
 
 import {
-  MAJOR_COEFFICIENTS, UNIVERSITY_PRESTIGE,
+  MAJOR_COEFFICIENTS, UNIVERSITY_PRESTIGE, SCHOOL_PRESTIGE_MULTIPLIER,
   SCHOOL_TIER_MAP, SCHOOL_TUITION_MAP,
   SCHOOL_IN_STATE_TUITION_MAP, SCHOOL_OUT_STATE_TUITION_MAP,
   SCHOOL_LOCATION_STATE_MAP, US_STATE_ABBR,
@@ -37,11 +37,14 @@ let _majorCoefficients = {}
 // Runtime-overridable maps — start with the static seed data from economicData.js.
 // Call setUniversityMaps() after fetching Supabase to inject live DB values so newly
 // added schools are automatically correct without a code deploy.
-let _tierMap          = SCHOOL_TIER_MAP
-let _tuitionMap       = SCHOOL_TUITION_MAP           // private tuition
-let _inStateTuitionMap  = SCHOOL_IN_STATE_TUITION_MAP
-let _outStateTuitionMap = SCHOOL_OUT_STATE_TUITION_MAP
-let _locationStateMap   = SCHOOL_LOCATION_STATE_MAP  // school → 2-letter state abbr
+let _tierMap             = SCHOOL_TIER_MAP
+let _tuitionMap          = SCHOOL_TUITION_MAP           // private tuition
+let _inStateTuitionMap   = SCHOOL_IN_STATE_TUITION_MAP
+let _outStateTuitionMap  = SCHOOL_OUT_STATE_TUITION_MAP
+let _locationStateMap    = SCHOOL_LOCATION_STATE_MAP    // school → 2-letter state abbr
+// Per-school prestige multipliers loaded from university_financials.prestige_multiplier.
+// Falls back to SCHOOL_PRESTIGE_MULTIPLIER (static), then UNIVERSITY_PRESTIGE[tier].
+let _prestigeMultiplierMap = SCHOOL_PRESTIGE_MULTIPLIER
 
 /**
  * Override the Mincerian coefficient maps with live data from career_trajectories.
@@ -63,16 +66,34 @@ function resolveCoefficients(major, tier) {
 }
 
 /**
+ * Resolve the prestige earnings multiplier for a given school.
+ * Priority: DB-sourced per-school value → static per-school map → tier-level fallback.
+ * This ensures every school gets a unique multiplier rather than sharing a tier bucket.
+ */
+function resolvePrestigeMultiplier(schoolName, tier) {
+  const perSchool = _prestigeMultiplierMap[schoolName]
+  if (typeof perSchool === 'number') return perSchool
+  return (UNIVERSITY_PRESTIGE[tier] || UNIVERSITY_PRESTIGE.flagship).multiplier
+}
+
+/**
  * Override all lookup maps with live data from the database.
  * DB values are merged on top of the static fallbacks so the static data
  * still covers any school the DB query might miss.
+ * @param {Record<string,string>}  tierMap
+ * @param {Record<string,number>}  tuitionMap
+ * @param {Record<string,number>}  inStateTuitionMap
+ * @param {Record<string,number>}  outStateTuitionMap
+ * @param {Record<string,string>}  locationStateMap
+ * @param {Record<string,number>}  prestigeMultiplierMap - per-school prestige_multiplier from DB
  */
-export function setUniversityMaps(tierMap, tuitionMap, inStateTuitionMap = {}, outStateTuitionMap = {}, locationStateMap = {}) {
+export function setUniversityMaps(tierMap, tuitionMap, inStateTuitionMap = {}, outStateTuitionMap = {}, locationStateMap = {}, prestigeMultiplierMap = {}) {
   _tierMap            = { ...SCHOOL_TIER_MAP,            ...tierMap }
   _tuitionMap         = { ...SCHOOL_TUITION_MAP,         ...tuitionMap }
   _inStateTuitionMap  = { ...SCHOOL_IN_STATE_TUITION_MAP,  ...inStateTuitionMap }
   _outStateTuitionMap = { ...SCHOOL_OUT_STATE_TUITION_MAP, ...outStateTuitionMap }
   _locationStateMap   = { ...SCHOOL_LOCATION_STATE_MAP,    ...locationStateMap }
+  _prestigeMultiplierMap = { ...SCHOOL_PRESTIGE_MULTIPLIER, ...prestigeMultiplierMap }
 }
 
 /**
@@ -184,7 +205,9 @@ export function buildTrajectory(schoolName, major, householdIncome, isInState, s
   const tier = _tierMap[schoolName] || 'flagship'
   // Use tier-specific coefficients from the DB when available; fall back to static map
   const coeffs = resolveCoefficients(major, tier)
-  const prestige = UNIVERSITY_PRESTIGE[tier] || UNIVERSITY_PRESTIGE.flagship
+  // Per-school multiplier gives each university a unique earnings premium.
+  const prestigeBaseMultiplier = resolvePrestigeMultiplier(schoolName, tier)
+  const prestige = { multiplier: prestigeBaseMultiplier }
 
   const annualTuition = estimateTuition(schoolName, isInState)
   const annualAid = (actualAid !== null && actualAid !== undefined) ? actualAid : 0
@@ -332,7 +355,8 @@ export function compareOffers(schools, major, householdIncome, residencyState, g
     const tier = _tierMap[school] || 'flagship'
     // Use tier-specific coefficients (from DB when available, static fallback otherwise)
     const coeffs = resolveCoefficients(major, tier)
-    const prestige = UNIVERSITY_PRESTIGE[tier] || UNIVERSITY_PRESTIGE.flagship
+    // Per-school prestige multiplier — each school gets a unique value.
+    const prestigeBaseMultiplier = resolvePrestigeMultiplier(school, tier)
 
     // financialAidOffers always contains a number (0 = skipped/blank, >0 = student-entered).
     const actualAid = financialAidOffers[school] ?? 0
@@ -352,7 +376,7 @@ export function compareOffers(schools, major, householdIncome, residencyState, g
     // Signal vs Skill decomposition.
     // Use the career-average decayed multiplier (not the flat base) so this decomposition
     // is internally consistent with the year-by-year decayed prestige applied in buildTrajectory.
-    const avgMultiplier = careerAverageDecayedMultiplier(prestige.multiplier)
+    const avgMultiplier = careerAverageDecayedMultiplier(prestigeBaseMultiplier)
     const skillROI = npv * (1 - coeffs.signal_weight * (1 - 1 / avgMultiplier))
     const signalROI = npv - skillROI
 
@@ -376,7 +400,9 @@ export function compareOffers(schools, major, householdIncome, residencyState, g
       skillWeight: Math.round((1 - coeffs.signal_weight) * 100),
       signalROI: Math.round(signalROI),
       skillROI: Math.round(skillROI),
-      prestigeScore: tierScore,
+      // Map per-school multiplier (1.00–1.75) to a 0–100 prestige score for goal ranking.
+      // Formula: (multiplier - 1.0) / 0.75 * 100 → 0 at local baseline, 100 at MIT/Stanford.
+      prestigeScore: Math.round(Math.min(100, ((prestigeBaseMultiplier - 1.0) / 0.75) * 100)),
       employmentRate: Math.round(coeffs.employment_rate * 100),
     }
   })

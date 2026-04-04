@@ -17,15 +17,16 @@ import { supabase } from './supabase.js'
 let _cache = null
 
 /**
- * Fetch tier, tuition (private + in/out-of-state), location, and per-school
- * prestige_multiplier from `university_financials`.
+ * Fetch tier, tuition (private + in/out-of-state), location, per-school
+ * prestige_multiplier, and tier_signal_boost from `university_financials`.
  * @returns {{
  *   tierMap: Record<string,string>,
  *   tuitionMap: Record<string,number>,
  *   inStateTuitionMap: Record<string,number>,
  *   outStateTuitionMap: Record<string,number>,
  *   locationStateMap: Record<string,string>,
- *   prestigeMultiplierMap: Record<string,number>
+ *   prestigeMultiplierMap: Record<string,number>,
+ *   schoolSignalBoostMap: Record<string,number>
  * } | null}
  */
 export async function fetchUniversityMaps() {
@@ -34,7 +35,7 @@ export async function fetchUniversityMaps() {
   try {
     const { data, error } = await supabase
       .from('university_financials')
-      .select('school_name, tier, tuition_private, tuition_in_state, tuition_out_state, location_state, prestige_multiplier')
+      .select('school_name, tier, tuition_private, tuition_in_state, tuition_out_state, location_state, prestige_multiplier, tier_signal_boost')
 
     if (error || !data?.length) return null
 
@@ -44,8 +45,9 @@ export async function fetchUniversityMaps() {
     const outStateTuitionMap = {}   // public out-of-state tuition
     const locationStateMap = {}     // school → 2-letter state abbr
     const prestigeMultiplierMap = {} // per-school earnings premium multiplier
+    const schoolSignalBoostMap = {}  // per-school signal weight adjustment
 
-    data.forEach(({ school_name, tier, tuition_private, tuition_in_state, tuition_out_state, location_state, prestige_multiplier }) => {
+    data.forEach(({ school_name, tier, tuition_private, tuition_in_state, tuition_out_state, location_state, prestige_multiplier, tier_signal_boost }) => {
       if (!school_name) return
       if (tier) tierMap[school_name] = tier
       if (tuition_private)   tuitionMap[school_name] = tuition_private
@@ -53,9 +55,10 @@ export async function fetchUniversityMaps() {
       if (tuition_out_state) outStateTuitionMap[school_name] = tuition_out_state
       if (location_state)    locationStateMap[school_name] = location_state
       if (prestige_multiplier != null) prestigeMultiplierMap[school_name] = Number(prestige_multiplier)
+      if (tier_signal_boost  != null) schoolSignalBoostMap[school_name]  = Number(tier_signal_boost)
     })
 
-    _cache = { tierMap, tuitionMap, inStateTuitionMap, outStateTuitionMap, locationStateMap, prestigeMultiplierMap }
+    _cache = { tierMap, tuitionMap, inStateTuitionMap, outStateTuitionMap, locationStateMap, prestigeMultiplierMap, schoolSignalBoostMap }
     return _cache
   } catch {
     // Network error or Supabase misconfiguration — graceful fallback to static maps

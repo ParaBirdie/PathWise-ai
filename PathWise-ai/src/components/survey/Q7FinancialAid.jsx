@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { EyeOff, Info, CircleDollarSign } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSurveyStore } from '../../store/surveyStore'
-import { compareOffers, setUniversityMaps, setMajorCoefficients } from '../../lib/npvEngine'
+import { compareOffers, setUniversityMaps, setMajorCoefficients, setSchoolSignalBoostMap } from '../../lib/npvEngine'
 import { fetchUniversityMaps, fetchCareerCoefficients } from '../../lib/universityService'
 import { supabase } from '../../lib/supabase'
 import QuestionCard from './QuestionCard'
@@ -73,14 +73,17 @@ export default function Q7FinancialAid() {
     try {
       // Load live data from Supabase in parallel (each falls back to static data on error)
       const [maps, coeffMap] = await Promise.all([fetchUniversityMaps(), fetchCareerCoefficients()])
-      if (maps) setUniversityMaps(
-        maps.tierMap,
-        maps.tuitionMap,
-        maps.inStateTuitionMap,
-        maps.outStateTuitionMap,
-        maps.locationStateMap,
-        maps.prestigeMultiplierMap ?? {},
-      )
+      if (maps) {
+        setUniversityMaps(
+          maps.tierMap,
+          maps.tuitionMap,
+          maps.inStateTuitionMap,
+          maps.outStateTuitionMap,
+          maps.locationStateMap,
+          maps.prestigeMultiplierMap ?? {},
+        )
+        setSchoolSignalBoostMap(maps.schoolSignalBoostMap ?? {})
+      }
       if (coeffMap) setMajorCoefficients(coeffMap)
 
       // Run NPV comparison — per-school isInState is resolved inside compareOffers
@@ -128,6 +131,8 @@ export default function Q7FinancialAid() {
                 entryWage: r.entryWage,
                 year10Wage: r.year10Wage,
                 compositeScore: r.compositeScore,
+                skillWeight: r.skillWeight,
+                signalWeight: r.signalWeight,
               })),
             },
           })

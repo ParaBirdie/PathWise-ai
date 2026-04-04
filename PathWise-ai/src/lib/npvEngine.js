@@ -26,6 +26,7 @@ import {
   SCHOOL_TIER_MAP, SCHOOL_TUITION_MAP,
   SCHOOL_IN_STATE_TUITION_MAP, SCHOOL_OUT_STATE_TUITION_MAP,
   SCHOOL_LOCATION_STATE_MAP, US_STATE_ABBR,
+  TIER_SIGNAL_BOOST,
 } from './economicData.js'
 
 // Runtime-overridable Mincerian coefficients from the career_trajectories DB table.
@@ -45,6 +46,11 @@ let _locationStateMap    = SCHOOL_LOCATION_STATE_MAP    // school → 2-letter s
 // Per-school prestige multipliers loaded from university_financials.prestige_multiplier.
 // Falls back to SCHOOL_PRESTIGE_MULTIPLIER (static), then UNIVERSITY_PRESTIGE[tier].
 let _prestigeMultiplierMap = SCHOOL_PRESTIGE_MULTIPLIER
+
+// Per-school signal boost overrides loaded from university_financials.tier_signal_boost.
+// Falls back to TIER_SIGNAL_BOOST[tier] (static). Applied on top of a major's base
+// signal_weight; final value is clamped to [0.05, 0.95] in compareOffers.
+let _schoolSignalBoostMap = {}
 
 /**
  * Override the Mincerian coefficient maps with live data from career_trajectories.
@@ -94,6 +100,15 @@ export function setUniversityMaps(tierMap, tuitionMap, inStateTuitionMap = {}, o
   _outStateTuitionMap = { ...SCHOOL_OUT_STATE_TUITION_MAP, ...outStateTuitionMap }
   _locationStateMap   = { ...SCHOOL_LOCATION_STATE_MAP,    ...locationStateMap }
   _prestigeMultiplierMap = { ...SCHOOL_PRESTIGE_MULTIPLIER, ...prestigeMultiplierMap }
+}
+
+/**
+ * Override the per-school signal boost map with live data from university_financials.
+ * DB entries take priority over the TIER_SIGNAL_BOOST static fallback.
+ * @param {Record<string,number>} boostMap - { [schoolName]: tier_signal_boost }
+ */
+export function setSchoolSignalBoostMap(boostMap) {
+  _schoolSignalBoostMap = boostMap || {}
 }
 
 /**
@@ -373,11 +388,21 @@ export function compareOffers(schools, major, householdIncome, residencyState, g
     // aidUsed = student-entered amount, or 0 if nothing was entered (no estimation)
     const aidUsed = computedAid
 
-    // Signal vs Skill decomposition.
+    // Tier-adjusted Skill vs Signal decomposition.
+    // Elite schools (Ivy League, top-30) get a higher signal boost; state flagships
+    // and local schools get a lower signal weight — reflecting how much brand credential
+    // vs. demonstrated skill actually drives hiring outcomes at each tier.
+    // Per-school DB value takes priority; falls back to TIER_SIGNAL_BOOST[tier].
+    const tierBoost = TIER_SIGNAL_BOOST[tier] ?? 0
+    const schoolBoost = (_schoolSignalBoostMap[school] !== undefined)
+      ? _schoolSignalBoostMap[school]
+      : tierBoost
+    const adjustedSignalWeight = Math.min(0.95, Math.max(0.05, coeffs.signal_weight + schoolBoost))
+
     // Use the career-average decayed multiplier (not the flat base) so this decomposition
     // is internally consistent with the year-by-year decayed prestige applied in buildTrajectory.
     const avgMultiplier = careerAverageDecayedMultiplier(prestigeBaseMultiplier)
-    const skillROI = npv * (1 - coeffs.signal_weight * (1 - 1 / avgMultiplier))
+    const skillROI = npv * (1 - adjustedSignalWeight * (1 - 1 / avgMultiplier))
     const signalROI = npv - skillROI
 
     // Prestige score for goal weighting
@@ -396,8 +421,8 @@ export function compareOffers(schools, major, householdIncome, residencyState, g
       collegeCostNPV,  // discounted total economic cost incl. foregone wages (scoring)
       entryWage,
       year10Wage,
-      signalWeight: Math.round(coeffs.signal_weight * 100),
-      skillWeight: Math.round((1 - coeffs.signal_weight) * 100),
+      signalWeight: Math.round(adjustedSignalWeight * 100),
+      skillWeight: Math.round((1 - adjustedSignalWeight) * 100),
       signalROI: Math.round(signalROI),
       skillROI: Math.round(skillROI),
       // Map per-school multiplier (1.00–1.75) to a 0–100 prestige score for goal ranking.

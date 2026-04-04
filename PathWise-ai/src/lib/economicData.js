@@ -102,6 +102,28 @@ export const UNIVERSITY_PRESTIGE = {
 }
 
 /**
+ * Tier-level adjustment applied on top of a major's base signal_weight.
+ * Static fallback used when Supabase is unreachable; mirrors the
+ * tier_signal_boost column in university_financials.
+ *
+ * The adjusted weight = clamp(signal_weight + boost, 0.05, 0.95).
+ *
+ * Elite (Ivy League, top-30): +0.15 — brand credential dominates recruiter
+ *   screening in finance, consulting, and law at these schools.
+ * Research (top R1): +0.07 — school name still opens doors meaningfully.
+ * Flagship (state universities): −0.05 — employers weight demonstrated
+ *   skills, GPA, and internships more than alma mater at this tier.
+ * Local/Regional: −0.12 — hiring is almost entirely skills-based;
+ *   brand signal provides minimal career differentiation.
+ */
+export const TIER_SIGNAL_BOOST = {
+  elite:    0.15,
+  research: 0.07,
+  flagship: -0.05,
+  local:    -0.12,
+}
+
+/**
  * Per-school prestige multiplier — static fallback used when Supabase is
  * unreachable. Mirrors the prestige_multiplier column in university_financials.
  *

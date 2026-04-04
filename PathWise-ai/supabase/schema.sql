@@ -51,6 +51,13 @@ create table if not exists public.university_financials (
   -- Glassdoor alumni outcomes, and US News peer-assessment data.
   -- Range: ~1.00 (local/regional) → ~1.75 (MIT/Stanford).
   prestige_multiplier numeric(6,4) not null default 1.08,
+  -- Tier-based adjustment applied on top of the major's base signal_weight.
+  -- Elite schools (Ivy League, top-30): +0.15 → brand dominates career outcomes.
+  -- Research universities: +0.07 → brand still matters meaningfully.
+  -- State flagships: −0.05 → employers weight skills/GPA more than alma mater.
+  -- Local/Regional: −0.12 → demonstrated ability drives hiring over credential signal.
+  -- Final adjusted weight is clamped to [0.05, 0.95] in the engine.
+  tier_signal_boost   numeric(4,2) not null default 0,
   created_at          timestamptz default now()
 );
 
@@ -372,3 +379,15 @@ values
   ('CUNY Baruch College',                      'local',  7600, 15480,  null,  2800,  8000,  1, 'NY', 1.03)
 
 on conflict (school_name) do update set prestige_multiplier = excluded.prestige_multiplier;
+
+-- ----------------------------------------------------------------
+-- Seed: tier_signal_boost — set per tier for all seeded schools
+-- Elite schools (Ivy League, top-30): brand signal dominates outcomes.
+-- Research universities: brand still matters significantly.
+-- State flagships: employers weight demonstrated skills over alma mater.
+-- Local/Regional schools: hiring driven by ability, not credential signal.
+-- ----------------------------------------------------------------
+update public.university_financials set tier_signal_boost =  0.15 where tier = 'elite';
+update public.university_financials set tier_signal_boost =  0.07 where tier = 'research';
+update public.university_financials set tier_signal_boost = -0.05 where tier = 'flagship';
+update public.university_financials set tier_signal_boost = -0.12 where tier = 'local';

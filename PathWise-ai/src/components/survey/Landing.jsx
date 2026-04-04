@@ -23,20 +23,21 @@ export default function Landing() {
         }}
       />
 
-      {/* Nav */}
-      <nav className="absolute top-10 left-10 z-50">
+      {/* Nav — positioned relative to the full wrapper */}
+      <nav className="absolute top-12 left-12 z-50">
         <span
-          className="font-black text-2xl text-[#e7e5e4]"
+          className="font-black text-2xl text-[#c4b5fd]"
           style={{ letterSpacing: '-0.02em' }}
         >
           PathWise
         </span>
       </nav>
 
-      {/* Main content */}
-      <main className="relative flex-1 flex flex-col items-center justify-start px-6 overflow-hidden">
+      {/* Main content — no px on main, sections handle their own padding */}
+      <main className="relative flex-1 flex flex-col overflow-hidden">
+
         {/* Hero */}
-        <section className="relative z-10 w-full max-w-5xl mx-auto text-center pt-32">
+        <section className="relative z-10 w-full max-w-5xl mx-auto text-center pt-32 px-6">
           <h1
             className="font-black text-[#e7e5e4] mb-8 leading-[1.05]"
             style={{
@@ -75,7 +76,7 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* Bento grid */}
+        {/* Bento grid — wider max-w, no double-padding from parent */}
         <section className="relative z-10 w-full max-w-7xl mx-auto px-12 grid grid-cols-12 gap-6 pb-20">
           {/* Left large card */}
           <div className="col-span-12 md:col-span-7 bg-[#131313] p-10 rounded-xl flex flex-col justify-end min-h-[300px]">
@@ -89,7 +90,7 @@ export default function Landing() {
           </div>
 
           {/* Right two cards */}
-          <div className="col-span-12 md:col-span-5 flex flex-col gap-5">
+          <div className="col-span-12 md:col-span-5 flex flex-col gap-6">
             <div className="flex-1 bg-[#252626] p-6 rounded-xl">
               <Sparkles className="w-5 h-5 text-[#ccbeff] mb-3" />
               <h3 className="text-base font-bold text-[#e7e5e4] mb-1">Predictive Clarity</h3>

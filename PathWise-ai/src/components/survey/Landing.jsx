@@ -36,7 +36,7 @@ export default function Landing() {
       {/* Main content */}
       <main className="relative flex-1 flex flex-col items-center justify-start px-6 overflow-hidden">
         {/* Hero */}
-        <section className="relative z-10 w-full max-w-5xl mx-auto text-center pt-28">
+        <section className="relative z-10 w-full max-w-5xl mx-auto text-center pt-32">
           <h1
             className="font-black text-[#e7e5e4] mb-8 leading-[1.05]"
             style={{
@@ -57,7 +57,7 @@ export default function Landing() {
             Answer 10 questions. Get a personalized financial report for every school you're considering.
           </p>
 
-          <div className="flex justify-center mb-16">
+          <div className="flex justify-center mb-20">
             <button
               onClick={goNext}
               className="group flex items-center gap-3 bg-[#ccbeff] text-[#433675] px-10 py-5 rounded-full font-bold text-lg active:scale-95 transition-all duration-200"
@@ -76,9 +76,9 @@ export default function Landing() {
         </section>
 
         {/* Bento grid */}
-        <section className="relative z-10 w-full max-w-7xl mx-auto px-10 grid grid-cols-12 gap-5 pb-6">
+        <section className="relative z-10 w-full max-w-7xl mx-auto px-12 grid grid-cols-12 gap-6 pb-20">
           {/* Left large card */}
-          <div className="col-span-12 md:col-span-7 bg-[#131313] p-10 rounded-xl flex flex-col justify-end min-h-[240px]">
+          <div className="col-span-12 md:col-span-7 bg-[#131313] p-10 rounded-xl flex flex-col justify-end min-h-[300px]">
             <p className="text-[#ccbeff] text-xs font-bold tracking-[0.15em] uppercase mb-4">
               The Standard
             </p>
@@ -110,10 +110,10 @@ export default function Landing() {
 
       {/* Footer */}
       <footer
-        className="w-full py-6 border-t"
+        className="w-full py-10 border-t"
         style={{ background: '#131313', borderColor: 'rgba(72, 72, 72, 0.15)' }}
       >
-        <div className="flex flex-col md:flex-row justify-between items-center px-10 max-w-screen-2xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-center px-12 max-w-screen-2xl mx-auto">
           <p className="text-[#acabaa] text-[0.625rem] uppercase tracking-[0.1em] mb-4 md:mb-0">
             © 2024 PathWise AI. The Monolith of Financial Clarity.
           </p>

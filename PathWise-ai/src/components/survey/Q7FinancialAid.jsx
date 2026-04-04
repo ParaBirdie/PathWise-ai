@@ -131,6 +131,8 @@ export default function Q7FinancialAid() {
                 entryWage: r.entryWage,
                 year10Wage: r.year10Wage,
                 compositeScore: r.compositeScore,
+                skillWeight: r.skillWeight,
+                signalWeight: r.signalWeight,
               })),
             },
           })

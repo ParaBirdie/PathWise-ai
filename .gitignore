@@ -1,0 +1,15 @@
+.vercel
+.env*
+
+# ── Repo-root safety ────────────────────────────────────────────────────────
+# This git repo is rooted at $HOME, not at a project folder. Without a
+# deny-by-default rule, a stray `git add -A` stages ~/.ssh private keys,
+# ~/.claude.json (OAuth tokens), ~/.aws, and shell history — to a public
+# GitHub remote. Everything at the top level is ignored; re-include only
+# what is intentionally tracked.
+#
+# To track a NEW project in $HOME, add a line: !/YourProjectName/
+/*
+!/.gitignore
+!/BUILD_GUIDE.md
+!/PathWise-ai/

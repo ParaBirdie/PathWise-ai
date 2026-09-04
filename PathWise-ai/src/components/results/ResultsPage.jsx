@@ -9,7 +9,9 @@ import { fetchLatestQuestionData } from '../../lib/questionDataService'
 import WealthChart from './WealthChart'
 import SchoolCard from './SchoolCard'
 import MoneyFitSlider from './MoneyFitSlider'
+import DecisionNarrative from './DecisionNarrative'
 import DownloadShareMenu from './DownloadShareMenu'
+import AskPathWise from './AskPathWise'
 
 const GOAL_LABEL = Object.fromEntries(PRIMARY_GOALS.map(({ value, label }) => [value, label]))
 
@@ -54,6 +56,7 @@ export default function ResultsPage() {
   const {
     comparisonResult, major, goals, reset, setComparisonResult,
     fitScores, fitStatus, fitWeight, setFitWeight,
+    schools, incomeBracket, residency, financialAidOffers, fitProfiles,
   } = useSurveyStore()
   const [loading, setLoading] = useState(!comparisonResult)
 
@@ -294,6 +297,16 @@ export default function ResultsPage() {
             </div>
           </motion.div>
 
+          {/* ── Decision Narrative (Agent A2, §4) ── */}
+          {/* Self-contained: owns its fetch, loading state and failure path.
+              Renders nothing at all if A2 fails, so there is nothing to guard. */}
+          <DecisionNarrative
+            comparisonResult={comparisonResult}
+            fitScores={fitScores}
+            major={major}
+            goals={goals}
+          />
+
           {/* ── Wealth Trajectory Chart ── */}
           <motion.div variants={stagger.item} style={{ marginBottom: '1.5rem' }}>
             <WealthChart results={results} />
@@ -398,6 +411,23 @@ export default function ResultsPage() {
 
         </motion.div>
       </div>
+
+      {/* Agent A3 (§5). Self-contained: owns its own launch button, drawer,
+          school tabs and client-side tool loop. `fitScores` is optional — the
+          chat works on NPV alone. */}
+      <AskPathWise
+        comparisonResult={comparisonResult}
+        fitScores={fitScores}
+        fitProfiles={fitProfiles}
+        surveyInputs={{
+          schools,
+          major,
+          householdIncome: incomeBracket?.value,
+          residencyState: residency,
+          goals,
+          financialAidOffers,
+        }}
+      />
     </div>
   )
 }

@@ -69,6 +69,79 @@ export function sanitizeFitScores(scores, profiles) {
   return out
 }
 
+// Q6 buckets (see ALUMNI_RANGES in Q6Alumni.jsx). These two are "fewer than ten
+// alumni at your dream company" — a thin pipeline into the target career.
+const THIN_NETWORK = { '0-5': '0–5', '5-10': '5–10' }
+
+// Student weather answers that name an actual preference. Q9's fourth option,
+// "Rainy Days", carries the value `any`, which means NO preference — and no
+// student value maps to the school-side climate `wet` (§2).
+const REAL_WEATHER_PREF = new Set(['warm', 'cold', 'mild'])
+
+/**
+ * Notes derived from the student's own answers rather than from school facts.
+ *
+ * Climate and alumni counts are the two signals students care most about that
+ * `university_profiles.facts` does not cover — there is no climate fact for any
+ * school, and the alumni count comes from the student, not the school. A1 is
+ * therefore forbidden from claiming either (it has no factIndex to cite and the
+ * server deletes uncited claims), so they are computed here instead: no tokens,
+ * no hallucination, and §2's climate enum enforced mechanically.
+ *
+ * These are rendered WITHOUT a source link and flagged `derived: true`, so the
+ * promise that every *cited* reason traces to a real fact stays literally true.
+ */
+export function deriveNotes({ profile, weatherPref, alumniRange }) {
+  const notes = { climate: null, network: null }
+
+  const climate = profile?.climate
+  if (climate && REAL_WEATHER_PREF.has(weatherPref) && REAL_WEATHER_PREF.has(climate)) {
+    notes.climate = climate === weatherPref
+      ? { text: `${cap(climate)} climate matches your weather preference.`, polarity: 'pro', derived: true }
+      : { text: `${cap(climate)} climate — you asked for ${weatherPref}.`, polarity: 'con', derived: true }
+  }
+
+  const bucket = THIN_NETWORK[alumniRange]
+  if (bucket) {
+    notes.network = {
+      text: `Only ${bucket} alumni at your dream company — a thin network into that career.`,
+      derived: true,
+    }
+  }
+
+  return notes
+}
+
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1)
+
+/**
+ * Append the derived notes to each sanitized fit entry: climate as the final
+ * reason, the thin-network note as a final concern.
+ *
+ * @param {Record<string,object>} entries  output of sanitizeFitScores
+ * @param {object} ctx  { profiles, weatherPref, alumniData }
+ * @returns {Record<string,object>} new entries; input is not mutated
+ */
+export function attachDerivedNotes(entries, { profiles, weatherPref = '', alumniData = {} } = {}) {
+  const byName = Array.isArray(profiles) ? indexProfiles(profiles) : (profiles ?? {})
+  const out = {}
+
+  Object.entries(entries ?? {}).forEach(([school, entry]) => {
+    const { climate, network } = deriveNotes({
+      profile: byName[school],
+      weatherPref,
+      alumniRange: alumniData?.[school],
+    })
+    out[school] = {
+      ...entry,
+      reasons: climate ? [...entry.reasons, climate] : entry.reasons,
+      concerns: network ? [...entry.concerns, network] : entry.concerns,
+    }
+  })
+
+  return out
+}
+
 /**
  * Blend of the normalized 0–1 NPV composite and the 0–1 Fit score.
  * Default 50/50. Both axes stay independently visible in the UI.

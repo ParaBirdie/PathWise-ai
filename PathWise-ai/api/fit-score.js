@@ -287,7 +287,7 @@ function buildUserMessage({ profiles, major, careerIndustry, careerRole, interes
 async function scoreFit(userMessage) {
   const base = {
     model: MODEL,
-    max_tokens: 2000,
+    max_tokens: 2500,   // §3 says 2000; raised to stop the tail truncating on 4-school sets
     temperature: 0.2,
     system: SYSTEM,
     messages: [{ role: 'user', content: userMessage }],

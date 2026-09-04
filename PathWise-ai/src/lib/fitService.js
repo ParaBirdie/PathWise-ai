@@ -11,7 +11,7 @@
  */
 
 import { fetchUniversityProfiles } from './universityService.js'
-import { sanitizeFitScores } from './fitEngine.js'
+import { sanitizeFitScores, attachDerivedNotes } from './fitEngine.js'
 
 // Measured A1 latency across nine real 4-school runs: median ~12s, worst 19.6s.
 // A 20s budget clipped the tail, and a cold function start sits on top of that.
@@ -67,8 +67,14 @@ export async function requestFitScores(answers) {
 
     const body = await res.json()
     // Anti-hallucination guard: reasons whose factIndex does not resolve to a
-    // real fact are dropped here, before anything reaches the UI.
-    return { scores: sanitizeFitScores(body.scores, profiles), profiles, error: null }
+    // real fact are dropped here, before anything reaches the UI. Only then are
+    // the derived climate/network notes appended — they carry no factIndex by
+    // design, so they must never pass through the citation filter.
+    const scores = attachDerivedNotes(
+      sanitizeFitScores(body.scores, profiles),
+      { profiles, weatherPref, alumniData }
+    )
+    return { scores, profiles, error: null }
   } catch (err) {
     const reason = err?.name === 'AbortError' ? 'timeout' : (err?.message ?? 'network error')
     console.warn('[PathWise] fit-score unavailable:', reason)

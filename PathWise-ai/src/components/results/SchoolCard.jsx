@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { ChevronDown, ChevronUp, BadgeCheck, Check, AlertTriangle, Link2, Sparkles } from 'lucide-react'
+import { ChevronDown, ChevronUp, BadgeCheck, Check, AlertTriangle, Link2, Sparkles, User } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatCurrency } from '../../lib/npvEngine'
 import { SCHOOL_COLORS } from '../../lib/economicData'
@@ -294,9 +294,16 @@ export default function SchoolCard({ result, rank, color, fit = null, fitStatus 
 function FitSection({ fit }) {
   if (!fit) return null
 
+  // Cited reasons first, then the derived climate note, then cited concerns,
+  // then the derived network note — so each derived line closes out its group.
+  const split = (list, kindOf) => {
+    const cited = list.filter((i) => !i.derived).map((i) => ({ ...i, kind: kindOf(i) }))
+    const derived = list.filter((i) => i.derived).map((i) => ({ ...i, kind: kindOf(i) }))
+    return [...cited, ...derived]
+  }
   const items = [
-    ...fit.reasons.map((r) => ({ ...r, kind: r.polarity === 'con' ? 'con' : 'pro' })),
-    ...fit.concerns.map((c) => ({ ...c, kind: 'concern' })),
+    ...split(fit.reasons, (r) => (r.polarity === 'con' ? 'con' : 'pro')),
+    ...split(fit.concerns, () => 'concern'),
   ]
 
   if (!fit.headline && items.length === 0) return null
@@ -334,13 +341,26 @@ function FitSection({ fit }) {
         {items.map((item, i) => {
           const { color: iconColor, Icon } = STYLE[item.kind]
           return (
-            <div key={`${item.kind}-${item.factIndex}-${i}`} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem' }}>
+            <div key={`${item.kind}-${i}`} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem' }}>
               <Icon size={14} style={{ color: iconColor, flexShrink: 0, marginTop: '0.1875rem' }} />
               <div style={{ minWidth: 0 }}>
                 <p style={{ fontSize: '0.8125rem', color: '#e7e5e4', lineHeight: 1.55 }}>
                   {item.text}
                 </p>
-                {item.fact?.source_url && (
+                {item.derived ? (
+                  // No source link: this line comes from the student's own Q6/Q9
+                  // answers, not from a school fact. Labelling it keeps the
+                  // "every cited reason traces to a fact" claim honest.
+                  <span
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                      fontSize: '0.6875rem', color: '#767575', marginTop: '0.25rem',
+                    }}
+                  >
+                    <User size={10} />
+                    From your answers
+                  </span>
+                ) : item.fact?.source_url && (
                   <a
                     href={item.fact.source_url}
                     target="_blank"

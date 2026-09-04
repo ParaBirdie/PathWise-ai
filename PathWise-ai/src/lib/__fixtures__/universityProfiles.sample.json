@@ -1,0 +1,49 @@
+{
+  "_comment": "Frozen sample of two public.university_profiles rows (§2). factIndex in fitScores.sample.json indexes into the matching school's facts array.",
+  "profiles": [
+    {
+      "school_name": "Duke University",
+      "climate": "mild",
+      "setting": "suburban",
+      "student_body_size": 6800,
+      "greek_pct": 0.29,
+      "notable_programs": ["Nicholas School of the Environment", "Pratt School of Engineering"],
+      "facts": [
+        { "claim": "Placeholder fact 0", "category": "academics", "source_url": "https://example.edu/0" },
+        { "claim": "Placeholder fact 1", "category": "academics", "source_url": "https://example.edu/1" },
+        { "claim": "Nicholas School places undergraduates in funded climate research each summer", "category": "academics", "source_url": "https://nicholas.duke.edu/" },
+        { "claim": "Placeholder fact 3", "category": "outcomes", "source_url": "https://example.edu/3" },
+        { "claim": "Placeholder fact 4", "category": "campus_life", "source_url": "https://example.edu/4" },
+        { "claim": "Placeholder fact 5", "category": "campus_life", "source_url": "https://example.edu/5" },
+        { "claim": "Placeholder fact 6", "category": "location", "source_url": "https://example.edu/6" },
+        { "claim": "Durham averages mild winters with highs near 52F in January", "category": "location", "source_url": "https://www.weather.gov/rah/" },
+        { "claim": "Placeholder fact 8", "category": "campus_life", "source_url": "https://example.edu/8" },
+        { "claim": "About 29 percent of undergraduates join a fraternity or sorority", "category": "campus_life", "source_url": "https://students.duke.edu/" },
+        { "claim": "Placeholder fact 10", "category": "outcomes", "source_url": "https://example.edu/10" },
+        { "claim": "Club soccer competes in the NIRSA national tournament", "category": "campus_life", "source_url": "https://recreation.duke.edu/" },
+        { "claim": "Placeholder fact 12", "category": "cost", "source_url": "https://example.edu/12" },
+        { "claim": "Placeholder fact 13", "category": "outcomes", "source_url": "https://example.edu/13" }
+      ]
+    },
+    {
+      "school_name": "University of Michigan",
+      "climate": "cold",
+      "setting": "urban",
+      "student_body_size": 33000,
+      "greek_pct": 0.18,
+      "notable_programs": ["Program in the Environment", "Ross School of Business"],
+      "facts": [
+        { "claim": "Placeholder fact 0", "category": "academics", "source_url": "https://example.edu/m0" },
+        { "claim": "Program in the Environment offers a research-track undergraduate major", "category": "academics", "source_url": "https://lsa.umich.edu/pite" },
+        { "claim": "Placeholder fact 2", "category": "academics", "source_url": "https://example.edu/m2" },
+        { "claim": "Placeholder fact 3", "category": "outcomes", "source_url": "https://example.edu/m3" },
+        { "claim": "Enrolls roughly 33,000 undergraduates on the Ann Arbor campus", "category": "campus_life", "source_url": "https://ro.umich.edu/" },
+        { "claim": "Placeholder fact 5", "category": "campus_life", "source_url": "https://example.edu/m5" },
+        { "claim": "Ann Arbor January highs average 32F with regular snowfall", "category": "location", "source_url": "https://www.weather.gov/dtx/" },
+        { "claim": "Placeholder fact 7", "category": "location", "source_url": "https://example.edu/m7" },
+        { "claim": "Placeholder fact 8", "category": "outcomes", "source_url": "https://example.edu/m8" },
+        { "claim": "Placeholder fact 9", "category": "cost", "source_url": "https://example.edu/m9" }
+      ]
+    }
+  ]
+}

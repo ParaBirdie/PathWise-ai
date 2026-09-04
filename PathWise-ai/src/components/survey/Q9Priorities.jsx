@@ -48,6 +48,11 @@ export default function Q9Priorities() {
     ).then(({ error }) => {
       if (error) console.error('[PathWise] question_data save failed:', error.message)
     })
+
+    // Fire Agent A1 in parallel with navigation. Not awaited: the results page
+    // must render its NPV analysis immediately and let Fit slot in when it lands.
+    useSurveyStore.getState().runFitScoring()
+
     goNext()
   }
 

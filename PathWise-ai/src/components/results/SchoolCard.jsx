@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { ChevronDown, ChevronUp, BadgeCheck } from 'lucide-react'
+import { ChevronDown, ChevronUp, BadgeCheck, Check, AlertTriangle, Link2, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatCurrency } from '../../lib/npvEngine'
 import { SCHOOL_COLORS } from '../../lib/economicData'
@@ -11,7 +11,7 @@ const TIER_LABELS = {
   local:    { label: 'Local / Community' },
 }
 
-export default function SchoolCard({ result, rank, color }) {
+export default function SchoolCard({ result, rank, color, fit = null, fitStatus = 'idle' }) {
   const [showBreakdown, setShowBreakdown] = useState(false)
   const tier = TIER_LABELS[result.tier] || TIER_LABELS.flagship
   const isTop = rank === 0
@@ -77,15 +77,43 @@ export default function SchoolCard({ result, rank, color }) {
               {tier.label}
             </span>
           </div>
-          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <p style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#e7e5e4', lineHeight: 1 }}>
-              {formatCurrency(result.npv, true)}
-            </p>
-            <p style={{ fontSize: '0.6875rem', color: '#767575', marginTop: '0.25rem', letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 600 }}>
-              40-yr NPV
-            </p>
+          {/* Two independent axes, side by side: money (NPV) and fit (A1). */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem', flexShrink: 0 }}>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#e7e5e4', lineHeight: 1 }}>
+                {formatCurrency(result.npv, true)}
+              </p>
+              <p style={{ fontSize: '0.6875rem', color: '#767575', marginTop: '0.25rem', letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 600 }}>
+                40-yr NPV
+              </p>
+            </div>
+
+            {fit && (
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#c4b5fd', lineHeight: 1 }}>
+                  {fit.fitScore}
+                </p>
+                <p style={{ fontSize: '0.6875rem', color: '#767575', marginTop: '0.25rem', letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 600 }}>
+                  Fit / 100
+                </p>
+              </div>
+            )}
+
+            {!fit && fitStatus === 'loading' && (
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#484848', lineHeight: 1 }}>
+                  —
+                </p>
+                <p style={{ fontSize: '0.6875rem', color: '#767575', marginTop: '0.25rem', letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 600 }}>
+                  Scoring fit…
+                </p>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* ── Fit rationale (Agent A1) ── */}
+        <FitSection fit={fit} />
 
         {/* Key metrics grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.625rem', marginBottom: '1.25rem' }}>
@@ -250,6 +278,90 @@ export default function SchoolCard({ result, rank, color }) {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Fit rationale from Agent A1.
+ *
+ * Every line here is already guaranteed to cite a real fact — `sanitizeFitScores`
+ * dropped anything whose `factIndex` did not resolve before this component ever
+ * saw it. The source link is that fact's own `source_url`, so a claim on screen
+ * is always one click from the page it came from.
+ */
+function FitSection({ fit }) {
+  if (!fit) return null
+
+  const items = [
+    ...fit.reasons.map((r) => ({ ...r, kind: r.polarity === 'con' ? 'con' : 'pro' })),
+    ...fit.concerns.map((c) => ({ ...c, kind: 'concern' })),
+  ]
+
+  if (!fit.headline && items.length === 0) return null
+
+  const STYLE = {
+    pro:     { color: '#4ade80', Icon: Check },
+    con:     { color: '#f0b132', Icon: AlertTriangle },
+    concern: { color: '#f0b132', Icon: AlertTriangle },
+  }
+
+  return (
+    <div
+      style={{
+        marginBottom: '1.25rem',
+        padding: '1.25rem 1.375rem',
+        borderRadius: '0.625rem',
+        backgroundColor: 'rgba(196,181,253,0.05)',
+        border: '1px solid rgba(196,181,253,0.15)',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: fit.headline ? '0.625rem' : '0.875rem' }}>
+        <Sparkles size={13} style={{ color: '#c4b5fd', flexShrink: 0 }} />
+        <span style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c4b5fd' }}>
+          Why this fits you
+        </span>
+      </div>
+
+      {fit.headline && (
+        <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#e7e5e4', lineHeight: 1.5, marginBottom: items.length ? '0.875rem' : 0 }}>
+          {fit.headline}
+        </p>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+        {items.map((item, i) => {
+          const { color: iconColor, Icon } = STYLE[item.kind]
+          return (
+            <div key={`${item.kind}-${item.factIndex}-${i}`} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem' }}>
+              <Icon size={14} style={{ color: iconColor, flexShrink: 0, marginTop: '0.1875rem' }} />
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: '0.8125rem', color: '#e7e5e4', lineHeight: 1.55 }}>
+                  {item.text}
+                </p>
+                {item.fact?.source_url && (
+                  <a
+                    href={item.fact.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={item.fact.claim}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                      fontSize: '0.6875rem', color: '#767575', textDecoration: 'none',
+                      marginTop: '0.25rem',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = '#c4b5fd' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = '#767575' }}
+                  >
+                    <Link2 size={10} />
+                    Source
+                  </a>
+                )}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

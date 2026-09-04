@@ -113,3 +113,44 @@ export async function fetchCareerCoefficients() {
 export function clearCoefficientsCache() {
   _coeffCache = null
 }
+
+let _profileCache = {}
+
+/**
+ * Fetch `university_profiles` rows for the given schools (§3).
+ *
+ * These are passed straight into POST /api/fit-score so the serverless function
+ * stays stateless and needs no Supabase credentials of its own. Only a handful
+ * of schools are enriched; anything missing simply comes back absent, and the
+ * caller renders that school without a Fit score rather than erroring.
+ *
+ * @param {string[]} schools
+ * @returns {Promise<Array>} profile rows (possibly fewer than `schools`), [] on failure
+ */
+export async function fetchUniversityProfiles(schools) {
+  const names = (schools ?? []).filter((s) => typeof s === 'string' && s)
+  if (names.length === 0) return []
+
+  const key = [...names].sort().join('|')
+  if (_profileCache[key]) return _profileCache[key]
+
+  try {
+    const { data, error } = await supabase
+      .from('university_profiles')
+      .select('school_name, facts, climate, setting, student_body_size, greek_pct, notable_programs')
+      .in('school_name', names)
+
+    if (error || !Array.isArray(data)) return []
+
+    _profileCache[key] = data
+    return data
+  } catch {
+    // Network error or Supabase misconfiguration — no profiles, no Fit section.
+    return []
+  }
+}
+
+/** Clear the profile cache (useful in tests or after re-running the enricher). */
+export function clearProfileCache() {
+  _profileCache = {}
+}

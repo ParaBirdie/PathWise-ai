@@ -1,0 +1,30 @@
+{
+  "_comment": "Frozen sample of the /api/fit-score (Agent A1) response, per §3 of docs/superpowers/specs/2026-09-03-ai-layer-design.md. Batches 4 and 5 develop against this so they do not block on Batch 3. Shape is the contract; values are illustrative.",
+  "scores": [
+    {
+      "school": "Duke University",
+      "fitScore": 87,
+      "headline": "Research pipeline matches your climate-science interest",
+      "reasons": [
+        { "text": "Nicholas School runs undergraduate climate research placements, matching your stated interest", "factIndex": 2, "polarity": "pro" },
+        { "text": "Mild North Carolina climate aligns with your weather preference", "factIndex": 7, "polarity": "pro" },
+        { "text": "Club soccer competes at the national level", "factIndex": 11, "polarity": "pro" }
+      ],
+      "concerns": [
+        { "text": "Greek life is prominent on campus; you marked it unimportant", "factIndex": 9 }
+      ]
+    },
+    {
+      "school": "University of Michigan",
+      "fitScore": 71,
+      "headline": "Strong program, but the weather works against you",
+      "reasons": [
+        { "text": "Program of the Environment offers a research-track major", "factIndex": 1, "polarity": "pro" }
+      ],
+      "concerns": [
+        { "text": "Ann Arbor winters run cold; you preferred mild weather", "factIndex": 6 },
+        { "text": "Large student body may make research placements competitive", "factIndex": 4 }
+      ]
+    }
+  ]
+}

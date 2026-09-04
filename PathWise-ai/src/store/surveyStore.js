@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { requestFitScores } from '../lib/fitService'
 
 export const useSurveyStore = create((set, get) => ({
   // Survey answers
@@ -24,6 +25,13 @@ export const useSurveyStore = create((set, get) => ({
   // Results cache
   comparisonResult: null,
 
+  // Fit Engine (Agent A1). Deliberately separate from comparisonResult: NPV
+  // renders the instant it exists, and fit slots in whenever A1 returns.
+  fitScores: {},        // { [school]: { fitScore, headline, reasons[], concerns[] } }
+  fitProfiles: [],      // university_profiles rows backing those citations
+  fitStatus: 'idle',    // 'idle' | 'loading' | 'ready' | 'error'
+  fitWeight: 0.5,       // Money ←→ Fit slider. 0 = all money, 1 = all fit.
+
   // Actions
   setSchools: (schools) => set({ schools }),
   setMajor: (major) => set({ major }),
@@ -43,6 +51,35 @@ export const useSurveyStore = create((set, get) => ({
   setGreekLife: (greekLife) => set({ greekLife }),
   setWeatherPref: (weatherPref) => set({ weatherPref }),
   setComparisonResult: (comparisonResult) => set({ comparisonResult }),
+  setFitWeight: (fitWeight) => set({ fitWeight }),
+
+  /**
+   * Fire Agent A1 (§3). Deliberately NOT awaited by its caller — Q9 advances to
+   * the results page immediately and this resolves into the store 2–4s later.
+   * Never rejects: fitService maps every failure to an empty score set, so the
+   * worst case is a results page with no Fit sections.
+   */
+  runFitScoring: () => {
+    const {
+      schools, major, careerIndustry, careerRole, interests,
+      workHours, greekLife, weatherPref, studentRatings, alumniData, goals,
+      fitStatus,
+    } = get()
+
+    if (fitStatus === 'loading') return   // already in flight
+    set({ fitStatus: 'loading' })
+
+    requestFitScores({
+      schools, major, careerIndustry, careerRole, interests,
+      workHours, greekLife, weatherPref, studentRatings, alumniData, goals,
+    }).then(({ scores, profiles, error }) => {
+      set({
+        fitScores: scores,
+        fitProfiles: profiles,
+        fitStatus: error ? 'error' : 'ready',
+      })
+    })
+  },
 
   goNext: () => {
     const { currentStep } = get()
@@ -61,5 +98,6 @@ export const useSurveyStore = create((set, get) => ({
     incomeBracket: null, goals: [], alumniData: {}, financialAidOffers: {}, studentRatings: {},
     workHours: '', interests: '', greekLife: '', weatherPref: '',
     currentStep: 0, direction: 1, comparisonResult: null,
+    fitScores: {}, fitProfiles: [], fitStatus: 'idle', fitWeight: 0.5,
   }),
 }))

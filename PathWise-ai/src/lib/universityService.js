@@ -37,6 +37,13 @@ export async function fetchUniversityMaps() {
       .from('university_financials')
       .select('school_name, tier, tuition_private, tuition_in_state, tuition_out_state, location_state, prestige_multiplier, tier_signal_boost')
 
+    // A schema error here is invisible without this log, and the fallback is
+    // total: one missing column discards the whole table, so tier, tuition and
+    // location silently come from the static maps in economicData.js instead.
+    // That is exactly how `prestige_multiplier` and `tier_signal_boost` stayed
+    // missing from the live database unnoticed — see
+    // supabase/migration_fix_schema_drift.sql.
+    if (error) console.warn('[PathWise] university_financials unavailable, using static maps:', error.message, error.code ?? '')
     if (error || !data?.length) return null
 
     const tierMap = {}
@@ -87,6 +94,7 @@ export async function fetchCareerCoefficients() {
       .from('career_trajectories')
       .select('major, university_tier, log_y0, r_schooling, beta1, beta2, beta3, beta4, employment_rate, signal_weight')
 
+    if (error) console.warn('[PathWise] career_trajectories unavailable, using static coefficients:', error.message, error.code ?? '')
     if (error || !data?.length) return null
 
     const coeffMap = {}
@@ -112,4 +120,46 @@ export async function fetchCareerCoefficients() {
 /** Clear the coefficients cache (useful in tests or after a DB update). */
 export function clearCoefficientsCache() {
   _coeffCache = null
+}
+
+let _profileCache = {}
+
+/**
+ * Fetch `university_profiles` rows for the given schools (§3).
+ *
+ * These are passed straight into POST /api/fit-score so the serverless function
+ * stays stateless and needs no Supabase credentials of its own. Only a handful
+ * of schools are enriched; anything missing simply comes back absent, and the
+ * caller renders that school without a Fit score rather than erroring.
+ *
+ * @param {string[]} schools
+ * @returns {Promise<Array>} profile rows (possibly fewer than `schools`), [] on failure
+ */
+export async function fetchUniversityProfiles(schools) {
+  const names = (schools ?? []).filter((s) => typeof s === 'string' && s)
+  if (names.length === 0) return []
+
+  const key = [...names].sort().join('|')
+  if (_profileCache[key]) return _profileCache[key]
+
+  try {
+    const { data, error } = await supabase
+      .from('university_profiles')
+      .select('school_name, facts, climate, setting, student_body_size, greek_pct, notable_programs')
+      .in('school_name', names)
+
+    if (error) console.warn('[PathWise] university_profiles unavailable, Fit scores will be skipped:', error.message, error.code ?? '')
+    if (error || !Array.isArray(data)) return []
+
+    _profileCache[key] = data
+    return data
+  } catch {
+    // Network error or Supabase misconfiguration — no profiles, no Fit section.
+    return []
+  }
+}
+
+/** Clear the profile cache (useful in tests or after re-running the enricher). */
+export function clearProfileCache() {
+  _profileCache = {}
 }

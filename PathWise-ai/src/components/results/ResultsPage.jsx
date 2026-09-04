@@ -1,13 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { RefreshCw, TrendingUp, Download } from 'lucide-react'
 import { useSurveyStore } from '../../store/surveyStore'
 import { formatCurrency } from '../../lib/npvEngine'
+import { blendScores } from '../../lib/fitEngine'
 import { PRIMARY_GOALS, SCHOOL_COLORS } from '../../lib/economicData'
 import { fetchLatestQuestionData } from '../../lib/questionDataService'
 import WealthChart from './WealthChart'
 import SchoolCard from './SchoolCard'
+import MoneyFitSlider from './MoneyFitSlider'
+import DecisionNarrative from './DecisionNarrative'
 import DownloadShareMenu from './DownloadShareMenu'
+import AskPathWise from './AskPathWise'
 
 const GOAL_LABEL = Object.fromEntries(PRIMARY_GOALS.map(({ value, label }) => [value, label]))
 
@@ -46,9 +50,34 @@ const stagger = {
   },
 }
 
+const EMPTY_RESULTS = []
+
 export default function ResultsPage() {
-  const { comparisonResult, major, goals, reset, setComparisonResult } = useSurveyStore()
+  const {
+    comparisonResult, major, goals, reset, setComparisonResult,
+    fitScores, fitStatus, fitWeight, setFitWeight,
+    schools, incomeBracket, residency, financialAidOffers, fitProfiles,
+  } = useSurveyStore()
   const [loading, setLoading] = useState(!comparisonResult)
+
+  // Ranking = blend of the NPV composite and A1's fit score, recomputed in
+  // memory on every slider tick. No API call — both axes are already here.
+  // Hook order matters: this runs before the early returns below.
+  const npvResults = comparisonResult?.results ?? EMPTY_RESULTS
+  const ranked = useMemo(
+    () => blendScores(npvResults, fitScores, fitWeight),
+    [npvResults, fitScores, fitWeight]
+  )
+
+  // Chart and dot colors stay pinned to a school's original position, so
+  // re-ranking never swaps the colors out from under the legend.
+  const colorOf = useMemo(() => {
+    const map = {}
+    npvResults.forEach((r, i) => { map[r.school] = SCHOOL_COLORS[i % SCHOOL_COLORS.length] })
+    return map
+  }, [npvResults])
+
+  const hasAnyFit = ranked.some((r) => r.fitScore != null)
 
   // If comparisonResult is missing (e.g. page was reloaded), recover it
   // from the most recent question_data row saved for this anonymous user.
@@ -268,10 +297,31 @@ export default function ResultsPage() {
             </div>
           </motion.div>
 
+          {/* ── Decision Narrative (Agent A2, §4) ── */}
+          {/* Self-contained: owns its fetch, loading state and failure path.
+              Renders nothing at all if A2 fails, so there is nothing to guard. */}
+          <DecisionNarrative
+            comparisonResult={comparisonResult}
+            fitScores={fitScores}
+            major={major}
+            goals={goals}
+          />
+
           {/* ── Wealth Trajectory Chart ── */}
           <motion.div variants={stagger.item} style={{ marginBottom: '1.5rem' }}>
             <WealthChart results={results} />
           </motion.div>
+
+          {/* ── Money ←→ Fit ── */}
+          {(hasAnyFit || fitStatus === 'loading') && (
+            <motion.div variants={stagger.item} style={{ marginBottom: '1.5rem' }}>
+              <MoneyFitSlider
+                value={fitWeight}
+                onChange={setFitWeight}
+                disabled={!hasAnyFit}
+              />
+            </motion.div>
+          )}
 
           {/* ── School Cards ── */}
           <motion.div variants={stagger.item} style={{ marginBottom: '0.75rem' }}>
@@ -285,9 +335,15 @@ export default function ResultsPage() {
             </p>
           </motion.div>
 
-          {results.map((result, i) => (
-            <motion.div key={result.school} variants={stagger.item} style={{ marginBottom: '1rem' }}>
-              <SchoolCard result={result} rank={i} color={SCHOOL_COLORS[i % SCHOOL_COLORS.length]} />
+          {ranked.map((result, i) => (
+            <motion.div key={result.school} layout variants={stagger.item} style={{ marginBottom: '1rem' }}>
+              <SchoolCard
+                result={result}
+                rank={i}
+                color={colorOf[result.school]}
+                fit={result.fit}
+                fitStatus={fitStatus}
+              />
             </motion.div>
           ))}
 
@@ -355,6 +411,23 @@ export default function ResultsPage() {
 
         </motion.div>
       </div>
+
+      {/* Agent A3 (§5). Self-contained: owns its own launch button, drawer,
+          school tabs and client-side tool loop. `fitScores` is optional — the
+          chat works on NPV alone. */}
+      <AskPathWise
+        comparisonResult={comparisonResult}
+        fitScores={fitScores}
+        fitProfiles={fitProfiles}
+        surveyInputs={{
+          schools,
+          major,
+          householdIncome: incomeBracket?.value,
+          residencyState: residency,
+          goals,
+          financialAidOffers,
+        }}
+      />
     </div>
   )
 }

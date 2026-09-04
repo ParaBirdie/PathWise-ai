@@ -1,4 +1,15 @@
 {
+  "functions": {
+    "api/fit-score.js": {
+      "maxDuration": 60
+    },
+    "api/narrative.js": {
+      "maxDuration": 60
+    },
+    "api/chat.js": {
+      "maxDuration": 60
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",

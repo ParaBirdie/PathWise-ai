@@ -6,26 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PathWise AI</title>
 
-    <!--
-      Content-Security-Policy (meta-tag fallback for dev; production enforced via HTTP headers in vercel.json / netlify.toml)
-      - default-src 'self'                        — same-origin resources only by default
-      - script-src 'self'                         — no inline scripts, no eval
-      - style-src 'self' 'unsafe-inline'          — Tailwind inline styles; Inter font self-hosted via @fontsource/inter
-      - font-src 'self'                           — Inter served from the app bundle (no external CDN)
-      - connect-src 'self' *.supabase.co wss://*.supabase.co — Supabase REST + Realtime
-      - img-src 'self' data:                      — no external image loading
-      - frame-ancestors 'none'                    — NOTE: only enforced when sent as an HTTP response header,
-                                                     not from a <meta> tag; vercel.json / netlify.toml handle this
-      - base-uri 'self'                           — prevent base-tag injection
-      - form-action 'self'                        — prevent form hijacking
-    -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
 
+    <!--
+      Security headers (CSP, X-Frame-Options, Referrer-Policy, Permissions-Policy)
+      are delivered as HTTP response headers, not meta tags:
+        - production:   vercel.json / netlify.toml
+        - vite dev:     vite.config.js  server.headers
+        - vite preview: vite.config.js  preview.headers
+      A <meta> CSP used to live here too. It was removed because the browser
+      enforces the intersection of every policy it receives, so the duplicate
+      silently overrode the header (pinning img-src to 'self' data:), and its
+      script-src blocked the React Refresh inline preamble, leaving `npm run dev`
+      a blank page. frame-ancestors and X-Frame-Options are ignored in meta form
+      regardless. Keep the policy in the header configs only.
+    -->
     <!-- Prevent MIME-type sniffing attacks -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-
-    <!-- Belt-and-suspenders clickjacking protection alongside frame-ancestors -->
-    <meta http-equiv="X-Frame-Options" content="DENY" />
 
     <!-- Limit referrer information sent to third parties -->
     <meta name="referrer" content="strict-origin-when-cross-origin" />

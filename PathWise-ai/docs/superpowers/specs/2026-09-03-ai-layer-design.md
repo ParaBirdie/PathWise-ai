@@ -439,43 +439,26 @@ export function blendScores(results, fitScores, w = 0.5) { /* ... */ }
 
 ---
 
-# §4. Feature 2 — Map-first results page (Agent A2)
+# §4. Feature 2 — Decision Narrative card (Agent A2)
 
-## Layout
+**SCOPE CUT (2026-09-03), read this first.** The original design paired A2's
+generated narrative with an Instagram-style map: `CampusMap.jsx` (inline SVG,
+Albers projection), photo pins, a story tray, and a per-school detail sheet.
+Under time pressure for the demo, **all of the map/pin/photo/detail-sheet UI
+is deferred — see §7.** It was always the weakest AI claim in this plan (it's
+UI, not AI) and cutting it costs the least real capability per hour saved.
 
-`ResultsPage.jsx` becomes two stacked zones:
+**What remains and is now the entire scope of this batch:** A2's generated
+narrative — a plain-English explanation of the tradeoff, honest about when
+the money winner and the fit winner disagree — rendered as one card on the
+*existing* results page. No new layout zones, no map, no photos, no
+Supabase Storage.
 
-```
-┌─────────────────────────────────────┐
-│  ZONE 1 — CampusMap (100vh)         │  ← new
-│  Stylized US map, one pin per school│
-│  Story tray of school avatars below │
-│  A2's narrative brief beneath       │
-│  ↓ scroll cue                       │
-├─────────────────────────────────────┤
-│  ZONE 2 — existing report, verbatim │  ← unchanged
-│  Hero → WealthChart → SchoolCards   │
-└─────────────────────────────────────┘
-```
+## Placement
 
-Zone 2 is the current page moved down. **Do not restyle it.**
-
-## Why not Leaflet or Mapbox
-
-The CSP is `script-src 'self'` with no CDN and `img-src 'self' data:`. Every real map library needs an external script and an external tile server — three CSP holes, a new dependency, and a light-themed basemap that will fight the `#0e0e0e` design.
-
-**Build `src/components/results/CampusMap.jsx` as an inline SVG instead.** A simplified US outline path, plus school pins positioned by projecting `latitude`/`longitude` through a fixed Albers projection into the SVG viewBox. Zero new dependencies, zero CSP changes for tiles, and it will look considerably more designed than a Mapbox embed. Schools outside the US clamp to an "international" strip at the map edge.
-
-## The Instagram-style pin
-
-- Circular campus photo, 56px, from Supabase Storage
-- 3px ring in that school's `SCHOOL_COLORS[i]` (reuse from `economicData.js`)
-- Rank badge, top-right of the ring
-- Fit score in a small pill below
-- Framer Motion: staggered scale-in on mount, scale 1.12 on hover
-- Below the map: a horizontal **story tray** of the same avatars, tappable — this is the mobile affordance and the thing that reads as "Instagram"
-
-Clicking a pin or tray avatar opens a **detail sheet** (Framer Motion slide-up, not a route change) containing: hero photo + `photo_credit`, city/state, NPV, Fit score, top 3 reasons, top concern, and the **Ask about this school** button that opens Feature 3.
+Add one new card to `ResultsPage.jsx`, directly below the existing
+Life-Cycle Dividend hero and above the Wealth Trajectory Chart. Do not
+restructure the page into zones and do not touch anything else on the page.
 
 ## `/api/narrative` contract (A2)
 
@@ -513,13 +496,11 @@ Rules:
 
 ## Acceptance criteria
 
-- [ ] Map renders correctly for 1, 2, 3, and 4 schools.
-- [ ] A school with `photo_path` null shows a colored monogram fallback, not a broken image.
-- [ ] Zone 2 is pixel-identical to today's results page.
-- [ ] `photo_credit` is visible in every detail sheet.
-- [ ] Mobile (375px): map scales, story tray scrolls horizontally, sheet is full-screen.
-- [ ] A2 failing renders Zone 1 with the map and no brief. Not a crash.
+- [ ] Card renders below the hero, above `WealthChart`, correctly for 1–4 schools.
+- [ ] The rest of the results page is pixel-identical to today's page.
+- [ ] A2 failing renders the full page normally; the narrative card is simply absent. Not a crash.
 - [ ] `flipCondition` number matches a `compareOffers` re-run at that aid value.
+- [ ] No map, pins, photos, or Supabase Storage code introduced in this batch — that work is deferred (§7).
 
 ---
 
@@ -527,9 +508,22 @@ Rules:
 
 ## User story
 
-> I clicked Northeastern. Now I want to ask "what if I switch to CS sophomore year?" and get a real answer, not a brochure.
+> I want to ask "what if I switch to CS sophomore year?" about Duke specifically, and get a real answer, not a brochure. I also want to ask "why does this rank higher for me" and have it answer from my actual fit data, not just re-run the money model.
 
-A right-side drawer (desktop) / full-screen sheet (mobile), opened from a pin's detail sheet. Scoped to one school — the header says so, and the system prompt says so.
+## Launch UI — no map dependency
+
+**SCOPE CUT (2026-09-03):** the original design opened this drawer from a
+map pin's detail sheet (§4). Since the map is deferred, add a persistent
+**"Ask PathWise"** affordance directly on the results page instead — a
+floating button or a fixed panel, opening a right-side drawer (desktop) /
+full-screen sheet (mobile). Inside, a row of school-selector tabs matching
+the schools already rendered as `SchoolCard`s (same order, same
+`SCHOOL_COLORS`). Selecting a tab scopes the conversation to that school and
+resets it — the "Drawer state resets" acceptance criterion below still
+applies, just triggered by a tab switch instead of a different pin.
+
+Scoped to one school at a time — the header says so, and the system prompt
+says so.
 
 ## Architecture — the tool loop runs client-side
 
@@ -545,6 +539,24 @@ Browser                          /api/chat            Anthropic
 ```
 
 `/api/chat` is a **stateless proxy**: it injects the API key, forwards `messages` + `tools`, streams the response back. It holds no session state and knows nothing about colleges. The client owns the loop and re-sends full history each turn (the Messages API is stateless anyway). Cap the loop at **4 tool round-trips** per user message.
+
+## Context passed to the agent on drawer open / tab switch
+
+In addition to the tool below, send one context message when the drawer
+opens or the school tab changes, containing:
+
+- This school's NPV, tier, entry wage, and year-10 wage (already in
+  `comparisonResult` from the existing engine).
+- **If Batch 3 (§3, Agent A1) succeeded for this school:** its `fitScore`,
+  `headline`, `reasons`, and `concerns` — with `factIndex` **resolved
+  client-side** to the actual fact `claim` and `source_url` before sending,
+  so the model can cite specifics without a second tool round-trip.
+- If A1's output isn't available (it failed, or the student hasn't reached
+  that part of the flow), omit it. **This is optional context, not a
+  dependency** — the chat must work with NPV data alone.
+
+This is what lets "why does this rank higher for me" get answered from a
+real cited fact instead of either inventing a reason or refusing to answer.
 
 ## The one tool
 
@@ -586,12 +598,18 @@ Handler: merge `changes` over the store's current survey answers, call `compareO
 
 ```
 You are advising one high school senior about ONE school: {school}. You have
-their full analysis and this school's verified facts.
+their full analysis, this school's verified facts, and — if supplied — a
+separate fit analysis with specific cited reasons and concerns for this
+student at this school.
 
 Rules:
 - For any question about money, cost, salary, or "what if" — call
   recompute_scenario. Never estimate a dollar figure yourself. If the tool
   cannot answer it, say the model does not cover that.
+- For "why" questions about fit or ranking, answer using the supplied fit
+  reasons and concerns if you have them, and name the underlying fact. Do
+  not invent a reason beyond what was supplied. If no fit analysis was
+  supplied, say you don't have that breakdown for this school.
 - Answer only from the supplied facts and tool results. If you do not know,
   say so and say what would answer it (call admissions, ask a current student).
 - 2-4 sentences. This is a chat, not an essay.
@@ -618,28 +636,46 @@ Seed the drawer with three chips so the demo never depends on live typing:
 - [ ] "Should I take out $60k in loans?" declines to advise and redirects to tradeoffs.
 - [ ] An invalid tool arg (`major: "Wizardry"`) returns `is_error: true` and the model recovers in-conversation rather than crashing the drawer.
 - [ ] Tool loop terminates at 4 round-trips with a graceful message.
-- [ ] Drawer state resets when a different school's pin is opened.
+- [ ] Drawer state resets when a different school tab is selected.
+- [ ] "Why does this school rank higher for me?" answers using a real fit reason (when Batch 3's output is available for that school) instead of calling `recompute_scenario` or inventing an answer.
+- [ ] With no A1 fit data available (simulate by omitting it), the same question gets an honest "I don't have that breakdown" instead of a fabricated reason.
 
 ---
 
 # §6. Build order
 
+**Demo scope, applies to every batch below:** only these five schools need
+real data — `Arizona State University`, `Duke University`, `UCLA`,
+`University of Michigan`, `Johns Hopkins University` (exact strings, they
+are primary keys — note "UCLA" not the full name, and "Johns" with the s).
+Deployed to Vercel. Every other school falls back gracefully (no Fit score,
+no narrative, chat still works on NPV alone) rather than erroring.
+
 The unit of work is a **vertical slice that can be verified independently** — one agent owns API + lib + UI for one feature, so there is no interface for two agents to guess at. Each batch ends with a working app and a commit.
+
+**Status as of 2026-09-03: Batches 1 and 2 complete and verified** —
+plumbing live, 5 schools enriched (14 cited facts each) and geocoded in
+Supabase. Batches 4 and 5 below reflect a scope cut made under time
+pressure: the Instagram-style map (pins, story tray, detail sheets, campus
+photos) is deferred post-demo — see §7. Batch 4 now ships only A2's
+narrative text as a card on the existing results page; Batch 5's chat
+launches from a persistent page-level control instead of a map pin, and
+additionally receives Batch 3's fit reasoning as context.
 
 | Batch | Scope | Agents | Gate before moving on |
 |---|---|---|---|
-| **1. Plumbing** | §0 entirely: deps, `api/` scaffold, env, both CSP files, local-dev plugin, one working `/api` call | 1 | Run all three commands in §0.5 **by hand**. Non-negotiable. |
-| **2. Data** | 2a: §2 migrations + lat/long seed + photo upload · 2b: A4 enrichment script | 2 parallel | Query `university_profiles` — 8+ cited facts per school, every `source_url` resolves |
+| **1. Plumbing** ✅ | §0 entirely: deps, `api/` scaffold, env, both CSP files, local-dev plugin, one working `/api` call | 1 | Run all three commands in §0.5 **by hand**. Non-negotiable. |
+| **2. Data** ✅ | 2a: §2 migrations + lat/long seed · 2b: A4 enrichment script | 2 parallel | Query `university_profiles` — 8+ cited facts per school, every `source_url` resolves |
 | **3. Feature 1** | §3: A1 + `fitEngine.js` + Fit UI on SchoolCards + Money↔Fit slider | 1 | Two students, same offers, different Q9 → different ranking |
-| **4. Feature 2** | §4: `CampusMap.jsx` + detail sheet + story tray + A2 | 1 | Map renders at 1–4 schools; Zone 2 unchanged; mobile 375px |
-| **5. Feature 3** | §5: chat drawer + client tool loop + chips | 1 | "What if I switch to CS?" fires the tool; figure matches a direct `compareOffers` call |
+| **4. Feature 2 (cut down)** | §4: A2 narrative card only — no map, no photos | 1 | Card renders for 1–4 schools; rest of results page pixel-identical |
+| **5. Feature 3 (rescoped)** | §5: chat drawer launched from a page-level control + school tabs, client tool loop, chips, fit-reasoning context | 1 | "What if I switch to CS?" fires the tool; "why does this rank higher" cites a real fit reason when available |
 
 Notes:
 
 - Batch 1 is solo and human-verified because it is the only batch everything else sits on top of. Its failures are silent.
 - Batch 2 is the one place real parallelism pays — the migration and the enrichment script touch different files. Write both concurrently, apply 2a's migration, then run 2b's script.
-- Batches 3–5 stay solo and sequential. Each is internally coupled, and Feature 3 opens from Feature 2's detail sheet.
-- Batches 1–3 are a complete, demoable feature on their own. If time runs short, cut Batch 5 before Batch 4.
+- Batches 3–5 stay solo and sequential. Batch 5 depends on Batch 3's output shape (for the optional fit-reasoning context) but must degrade gracefully without it.
+- Batches 1–3 are a complete, demoable feature on their own. Batch 4 is now small enough (one card, no new layout) that there's little reason to cut it before Batch 5 if time is short — cut Batch 5's fit-reasoning context addition first if needed, since the base chat still works without it.
 - Give each agent this file as **context** and one batch as its **task**, including that batch's acceptance criteria. An agent with testable criteria verifies itself; one without reports "done" on code that does not run.
 - If running agents in parallel, use separate worktrees so they cannot collide on `package.json` and `vite.config.js`.
 
@@ -647,7 +683,8 @@ Notes:
 
 # §7. Explicitly out of scope for v1
 
-- **Scraped campus video.** Highest legal risk, lowest decision value, hardest to make load fast in a live demo. Photos only.
+- **The Instagram-style map entirely** — `CampusMap.jsx`, pins, story tray, detail sheets, campus photos, `photo_credit`, the `campus-photos` Supabase Storage bucket. This was §4's original scope; cut on 2026-09-03 for time. It's the lowest-AI-value piece of the whole plan (UI, not reasoning) and the most work per hour saved. Revisit post-demo if there's time — the `city`/`latitude`/`longitude` columns from §2 are already in place for it.
+- **Scraped campus video.** Highest legal risk, lowest decision value, hardest to make load fast in a live demo.
 - Real map tiles / pan-zoom.
 - Chat history persistence across sessions.
 - A1 running on more than 4 schools (the survey already caps at 4).
@@ -662,3 +699,4 @@ Notes:
 3. **"Every AI claim cites a source."** `factIndex` → `source_url`. Reasons that cannot cite are dropped before render. Show the guard.
 4. **"Offline enrichment, runtime reasoning."** A4 builds the fact base once; A1–A3 reason over it. Cheap, fast, deterministic — and it is the WAT architecture from this repo's own `CLAUDE.md`, applied in-product.
 5. **"3.6 cents per student."** Haiku 4.5 across all three runtime agents. Unit economics that work at high school scale.
+6. **"Ask it why, and it doesn't make something up."** The chat agent's fit-related answers cite the same fact base as the Fit Engine — ask "why does this rank higher for me" and it names the actual fact, or says it doesn't know. No map needed to land this; it's the conversation that sells it.

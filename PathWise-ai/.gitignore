@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Disposable intermediates (enrichment JSON, scraped data)
+.tmp/
